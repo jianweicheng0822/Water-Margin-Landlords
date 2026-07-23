@@ -48,7 +48,7 @@ public class GameSetup : MonoBehaviour
         {
             GameObject eventSystem = new GameObject("EventSystem");
             eventSystem.AddComponent<UnityEngine.EventSystems.EventSystem>();
-            eventSystem.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            eventSystem.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
         }
 
         // ==================== Background ====================
@@ -136,6 +136,7 @@ public class GameSetup : MonoBehaviour
 
         // ==================== Wire Everything Up ====================
 
+        aiPlayer.Init(turnManager, bidManager);
         GameUIManager uiManager = canvasObj.AddComponent<GameUIManager>();
         handView.Init(uiManager);
         uiManager.Init(handView, turnManager, bidManager, aiPlayer);

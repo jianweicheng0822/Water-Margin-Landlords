@@ -11,10 +11,13 @@ public class AIPlayer : MonoBehaviour
     private TurnManager turnManager;
     private BidManager bidManager;
 
-    private void Start()
+    /// <summary>
+    /// Initializes references to managers. Called by GameSetup.
+    /// </summary>
+    public void Init(TurnManager turnManager, BidManager bidManager)
     {
-        turnManager = GetComponent<TurnManager>();
-        bidManager = GetComponent<BidManager>();
+        this.turnManager = turnManager;
+        this.bidManager = bidManager;
     }
 
     /// <summary>

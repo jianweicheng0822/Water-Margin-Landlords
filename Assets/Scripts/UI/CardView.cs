@@ -139,8 +139,8 @@ public class CardView : MonoBehaviour
             case Rank.King: return "K";
             case Rank.Ace: return "A";
             case Rank.Two: return "2";
-            case Rank.BlackJoker: return "B";
-            case Rank.RedJoker: return "R";
+            case Rank.BlackJoker: return "\u5c0f";  // 小
+            case Rank.RedJoker: return "\u5927";    // 大
             default: return "?";
         }
     }
