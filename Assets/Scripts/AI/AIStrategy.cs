@@ -353,6 +353,285 @@ public static class AIStrategy
         remaining.Clear();
     }
 
+    // ==================== Play Decision ====================
+
+    /// <summary>
+    /// Chooses which combo to lead with during a free play (no previous combo to beat).
+    /// Strategy: play the smallest non-bomb combo to preserve strong cards.
+    /// Returns null only if hand is empty (should not happen in normal play).
+    /// </summary>
+    public static CardCombo ChooseLeadPlay(List<Card> hand)
+    {
+        List<CardCombo> combos = DecomposeHand(hand);
+        if (combos.Count == 0)
+            return null;
+
+        // If only one combo left, play it (even if it's a bomb)
+        if (combos.Count == 1)
+            return combos[0];
+
+        // Sort combos: non-bombs first, then by main rank ascending
+        combos.Sort((a, b) =>
+        {
+            // Bombs and rockets go last
+            int aWeight = (a.Type == ComboType.Bomb || a.Type == ComboType.Rocket) ? 1 : 0;
+            int bWeight = (b.Type == ComboType.Bomb || b.Type == ComboType.Rocket) ? 1 : 0;
+            if (aWeight != bWeight)
+                return aWeight.CompareTo(bWeight);
+
+            // Among same priority, prefer smaller rank
+            return a.MainRank.CompareTo(b.MainRank);
+        });
+
+        // Play the smallest non-bomb combo
+        return combos[0];
+    }
+
+    /// <summary>
+    /// Chooses which combo to play to beat the last played combo.
+    /// Strategy: find all possible plays that beat it, pick the smallest one.
+    /// Returns null if the AI decides to pass.
+    /// </summary>
+    public static CardCombo ChooseFollowPlay(List<Card> hand, CardCombo lastPlayed)
+    {
+        List<CardCombo> candidates = FindBeatingCombos(hand, lastPlayed);
+
+        if (candidates.Count == 0)
+            return null; // Must pass
+
+        // Sort by main rank ascending to pick the smallest winning play
+        candidates.Sort((a, b) =>
+        {
+            // Prefer non-bombs over bombs (save bombs for later)
+            int aWeight = (a.Type == ComboType.Bomb || a.Type == ComboType.Rocket) ? 1 : 0;
+            int bWeight = (b.Type == ComboType.Bomb || b.Type == ComboType.Rocket) ? 1 : 0;
+            if (aWeight != bWeight)
+                return aWeight.CompareTo(bWeight);
+
+            return a.MainRank.CompareTo(b.MainRank);
+        });
+
+        return candidates[0];
+    }
+
+    /// <summary>
+    /// Finds all possible combos from the hand that can beat the last played combo.
+    /// Searches for same-type combos with higher rank, plus any bombs/rockets.
+    /// </summary>
+    private static List<CardCombo> FindBeatingCombos(List<Card> hand, CardCombo lastPlayed)
+    {
+        List<CardCombo> results = new List<CardCombo>();
+        Dictionary<Rank, List<Card>> rankGroups = new Dictionary<Rank, List<Card>>();
+
+        foreach (Card card in hand)
+        {
+            if (!rankGroups.ContainsKey(card.Rank))
+                rankGroups[card.Rank] = new List<Card>();
+            rankGroups[card.Rank].Add(card);
+        }
+
+        // Always check for rockets
+        if (rankGroups.ContainsKey(Rank.BlackJoker) && rankGroups.ContainsKey(Rank.RedJoker))
+        {
+            List<Card> rocketCards = new List<Card>
+            {
+                rankGroups[Rank.BlackJoker][0],
+                rankGroups[Rank.RedJoker][0]
+            };
+            results.Add(new CardCombo(ComboType.Rocket, Rank.RedJoker, rocketCards));
+        }
+
+        // Always check for bombs (unless last played is a rocket)
+        if (lastPlayed.Type != ComboType.Rocket)
+        {
+            foreach (var kv in rankGroups)
+            {
+                if (kv.Value.Count == 4)
+                {
+                    CardCombo bomb = new CardCombo(ComboType.Bomb, kv.Key, kv.Value);
+                    // Only add if it actually beats the last played
+                    if (bomb.CanBeat(lastPlayed))
+                        results.Add(bomb);
+                }
+            }
+        }
+
+        // Find same-type combos that beat the last played
+        switch (lastPlayed.Type)
+        {
+            case ComboType.Single:
+                FindBeatingSingles(hand, lastPlayed, results);
+                break;
+            case ComboType.Pair:
+                FindBeatingPairs(rankGroups, lastPlayed, results);
+                break;
+            case ComboType.Triple:
+            case ComboType.TripleWithSingle:
+            case ComboType.TripleWithPair:
+                FindBeatingTriples(hand, rankGroups, lastPlayed, results);
+                break;
+            case ComboType.Straight:
+                FindBeatingStraights(hand, lastPlayed, results);
+                break;
+            case ComboType.StraightPair:
+                FindBeatingStraightPairs(hand, rankGroups, lastPlayed, results);
+                break;
+            default:
+                break;
+        }
+
+        return results;
+    }
+
+    /// <summary>
+    /// Finds all single cards that beat the last played single.
+    /// </summary>
+    private static void FindBeatingSingles(List<Card> hand, CardCombo lastPlayed, List<CardCombo> results)
+    {
+        // Use a set to avoid duplicates (only need one card per rank)
+        HashSet<Rank> addedRanks = new HashSet<Rank>();
+        foreach (Card card in hand)
+        {
+            if (card.Rank > lastPlayed.MainRank && !addedRanks.Contains(card.Rank))
+            {
+                results.Add(new CardCombo(ComboType.Single, card.Rank, new List<Card> { card }));
+                addedRanks.Add(card.Rank);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Finds all pairs that beat the last played pair.
+    /// </summary>
+    private static void FindBeatingPairs(Dictionary<Rank, List<Card>> rankGroups, CardCombo lastPlayed, List<CardCombo> results)
+    {
+        foreach (var kv in rankGroups)
+        {
+            if (kv.Value.Count >= 2 && kv.Key > lastPlayed.MainRank && !kv.Value[0].IsJoker)
+            {
+                List<Card> pairCards = kv.Value.Take(2).ToList();
+                results.Add(new CardCombo(ComboType.Pair, kv.Key, pairCards));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Finds all triple combos (with matching kicker type) that beat the last played triple.
+    /// </summary>
+    private static void FindBeatingTriples(List<Card> hand, Dictionary<Rank, List<Card>> rankGroups, CardCombo lastPlayed, List<CardCombo> results)
+    {
+        foreach (var kv in rankGroups)
+        {
+            if (kv.Value.Count >= 3 && kv.Key > lastPlayed.MainRank)
+            {
+                List<Card> tripleCards = kv.Value.Take(3).ToList();
+
+                if (lastPlayed.Type == ComboType.Triple)
+                {
+                    results.Add(new CardCombo(ComboType.Triple, kv.Key, tripleCards));
+                }
+                else if (lastPlayed.Type == ComboType.TripleWithSingle)
+                {
+                    // Find any single kicker
+                    Card kicker = hand.FirstOrDefault(c => c.Rank != kv.Key);
+                    if (kicker != null)
+                    {
+                        List<Card> combo = new List<Card>(tripleCards) { kicker };
+                        results.Add(new CardCombo(ComboType.TripleWithSingle, kv.Key, combo));
+                    }
+                }
+                else if (lastPlayed.Type == ComboType.TripleWithPair)
+                {
+                    // Find a pair kicker
+                    foreach (var kv2 in rankGroups)
+                    {
+                        if (kv2.Key != kv.Key && kv2.Value.Count >= 2 && !kv2.Value[0].IsJoker)
+                        {
+                            List<Card> combo = new List<Card>(tripleCards);
+                            combo.AddRange(kv2.Value.Take(2));
+                            results.Add(new CardCombo(ComboType.TripleWithPair, kv.Key, combo));
+                            break; // One pair kicker is enough
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Finds all straights of the same length that beat the last played straight.
+    /// </summary>
+    private static void FindBeatingStraights(List<Card> hand, CardCombo lastPlayed, List<CardCombo> results)
+    {
+        int length = lastPlayed.Length;
+        Dictionary<Rank, List<Card>> rankGroups = new Dictionary<Rank, List<Card>>();
+        foreach (Card card in hand)
+        {
+            if (!rankGroups.ContainsKey(card.Rank))
+                rankGroups[card.Rank] = new List<Card>();
+            rankGroups[card.Rank].Add(card);
+        }
+
+        // Try all possible starting ranks for a straight of the same length
+        for (int startRank = (int)lastPlayed.MainRank - length + 2; startRank <= (int)Rank.Ace - length + 1; startRank++)
+        {
+            Rank endRank = (Rank)(startRank + length - 1);
+
+            // End rank must be higher than last played
+            if (endRank <= lastPlayed.MainRank)
+                continue;
+
+            // Check if all ranks in range are available
+            bool valid = true;
+            List<Card> straightCards = new List<Card>();
+            for (int r = startRank; r <= (int)endRank; r++)
+            {
+                Rank rank = (Rank)r;
+                if (!rankGroups.ContainsKey(rank) || rankGroups[rank].Count == 0)
+                {
+                    valid = false;
+                    break;
+                }
+                straightCards.Add(rankGroups[rank][0]);
+            }
+
+            if (valid)
+                results.Add(new CardCombo(ComboType.Straight, endRank, straightCards));
+        }
+    }
+
+    /// <summary>
+    /// Finds all straight pairs of the same length that beat the last played straight pair.
+    /// </summary>
+    private static void FindBeatingStraightPairs(List<Card> hand, Dictionary<Rank, List<Card>> rankGroups, CardCombo lastPlayed, List<CardCombo> results)
+    {
+        int pairCount = lastPlayed.Length / 2;
+
+        for (int startRank = (int)lastPlayed.MainRank - pairCount + 2; startRank <= (int)Rank.Ace - pairCount + 1; startRank++)
+        {
+            Rank endRank = (Rank)(startRank + pairCount - 1);
+
+            if (endRank <= lastPlayed.MainRank)
+                continue;
+
+            bool valid = true;
+            List<Card> pairCards = new List<Card>();
+            for (int r = startRank; r <= (int)endRank; r++)
+            {
+                Rank rank = (Rank)r;
+                if (!rankGroups.ContainsKey(rank) || rankGroups[rank].Count < 2)
+                {
+                    valid = false;
+                    break;
+                }
+                pairCards.AddRange(rankGroups[rank].Take(2));
+            }
+
+            if (valid)
+                results.Add(new CardCombo(ComboType.StraightPair, endRank, pairCards));
+        }
+    }
+
     // ==================== Utility ====================
 
     /// <summary>
