@@ -22,6 +22,12 @@ All scripts use Unity + C# (MonoBehaviour, ScriptableObject, etc. where appropri
 - **UI (Scripts/UI/):** Display and interaction layer.
 - **Common (Scripts/Common/):** Shared utilities, events, constants.
 
+## Scene & UI Approach
+- All development is done in VS Code (user does not use Unity Editor for scene building).
+- UI and scene objects are created programmatically via code (GameSetup.cs).
+- Card and UI elements are generated at runtime, not via manual Prefab/scene editing.
+- Future: gradually migrate code-generated objects to proper Prefabs as needed.
+
 ## Tech Stack
 - Unity (URP, 2D)
 - C#
