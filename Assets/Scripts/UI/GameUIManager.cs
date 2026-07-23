@@ -19,13 +19,16 @@ public class GameUIManager : MonoBehaviour
     // UI elements (created by GameSetup)
     private Button playButton;
     private Button passButton;
-    private Button bidButton;
+    private Button bid1Button;
+    private Button bid2Button;
+    private Button bid3Button;
     private Button noBidButton;
     private GameObject bidPanel;
     private GameObject playPanel;
     private TextMeshProUGUI messageText;
     private TextMeshProUGUI lastPlayedText;
     private TextMeshProUGUI[] playerInfoTexts = new TextMeshProUGUI[3];
+    private Button restartButton;
 
     /// <summary>
     /// Initializes references to other managers and UI components.
@@ -43,30 +46,37 @@ public class GameUIManager : MonoBehaviour
     /// </summary>
     public void SetUIElements(
         Button playBtn, Button passBtn,
-        Button bidBtn, Button noBidBtn,
+        Button bid1Btn, Button bid2Btn, Button bid3Btn, Button noBidBtn,
         GameObject bidPnl, GameObject playPnl,
         TextMeshProUGUI msgText, TextMeshProUGUI lastPlayed,
-        TextMeshProUGUI[] playerInfos)
+        TextMeshProUGUI[] playerInfos, Button restartBtn)
     {
         playButton = playBtn;
         passButton = passBtn;
-        bidButton = bidBtn;
+        bid1Button = bid1Btn;
+        bid2Button = bid2Btn;
+        bid3Button = bid3Btn;
         noBidButton = noBidBtn;
         bidPanel = bidPnl;
         playPanel = playPnl;
         messageText = msgText;
         lastPlayedText = lastPlayed;
         playerInfoTexts = playerInfos;
+        restartButton = restartBtn;
 
         // Wire up button clicks
         playButton.onClick.AddListener(OnPlayClicked);
         passButton.onClick.AddListener(OnPassClicked);
-        bidButton.onClick.AddListener(OnBidClicked);
+        bid1Button.onClick.AddListener(() => OnBidScoreClicked(1));
+        bid2Button.onClick.AddListener(() => OnBidScoreClicked(2));
+        bid3Button.onClick.AddListener(() => OnBidScoreClicked(3));
         noBidButton.onClick.AddListener(OnNoBidClicked);
+        restartButton.onClick.AddListener(OnRestartClicked);
 
-        // Initially hide action panels
+        // Initially hide action panels and restart button
         bidPanel.SetActive(false);
         playPanel.SetActive(false);
+        restartButton.gameObject.SetActive(false);
     }
 
     // ==================== Bidding Phase ====================
@@ -94,9 +104,13 @@ public class GameUIManager : MonoBehaviour
         if (currentBidder == 0)
         {
             // Human player's turn to bid
-            SetMessage("Your turn to bid. Call landlord?");
+            int highest = bidManager.GetHighestBid();
+            SetMessage(highest > 0
+                ? $"Current highest bid: {highest}. Your turn to bid."
+                : "Your turn to bid.");
             bidPanel.SetActive(true);
             playPanel.SetActive(false);
+            UpdateBidButtons();
         }
         else
         {
@@ -117,11 +131,19 @@ public class GameUIManager : MonoBehaviour
         }
     }
 
-    private void OnBidClicked()
+    private void OnBidScoreClicked(int score)
     {
         bidPanel.SetActive(false);
-        bidManager.Bid();
-        OnBiddingComplete();
+        bidManager.BidScore(score);
+
+        if (!bidManager.IsBidding())
+        {
+            OnBiddingComplete();
+        }
+        else
+        {
+            ProcessBidTurn();
+        }
     }
 
     private void OnNoBidClicked()
@@ -131,15 +153,34 @@ public class GameUIManager : MonoBehaviour
 
         if (!bidManager.IsBidding())
         {
-            // All passed, game will re-deal via StartGame
-            // Re-show hand and restart bidding
-            RefreshHand();
-            StartBidding();
+            if (GameManager.Instance.CurrentPhase == GamePhase.Bidding)
+            {
+                // All passed, game re-dealt via StartGame
+                RefreshHand();
+                StartBidding();
+            }
+            else
+            {
+                // Someone had bid earlier, they became landlord
+                OnBiddingComplete();
+            }
         }
         else
         {
             ProcessBidTurn();
         }
+    }
+
+    /// <summary>
+    /// Enables/disables bid score buttons based on the current highest bid.
+    /// Players can only bid higher than the current highest.
+    /// </summary>
+    private void UpdateBidButtons()
+    {
+        int highest = bidManager.GetHighestBid();
+        bid1Button.interactable = highest < 1;
+        bid2Button.interactable = highest < 2;
+        bid3Button.interactable = highest < 3;
     }
 
     /// <summary>
@@ -285,6 +326,28 @@ public class GameUIManager : MonoBehaviour
             else
                 SetMessage($"Game Over! Farmers win! ({winner.Name} finished first)");
         }
+
+        // Show restart button
+        restartButton.gameObject.SetActive(true);
+    }
+
+    /// <summary>
+    /// Restarts the game: clears UI, resets state, begins a new round.
+    /// </summary>
+    private void OnRestartClicked()
+    {
+        // Cancel any pending AI invokes
+        CancelInvoke();
+
+        // Hide restart button
+        restartButton.gameObject.SetActive(false);
+
+        // Clear hand display and last played text
+        handView.ClearHand();
+        lastPlayedText.text = "";
+
+        // Start a fresh game
+        BeginGame();
     }
 
     // ==================== UI Updates ====================

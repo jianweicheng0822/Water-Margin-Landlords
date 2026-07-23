@@ -112,12 +112,16 @@ public class GameSetup : MonoBehaviour
         bidPanelRect.anchorMin = new Vector2(0.5f, 0.3f);
         bidPanelRect.anchorMax = new Vector2(0.5f, 0.3f);
         bidPanelRect.anchoredPosition = Vector2.zero;
-        bidPanelRect.sizeDelta = new Vector2(400, 60);
+        bidPanelRect.sizeDelta = new Vector2(700, 60);
 
-        Button bidButton = CreateButton(bidPanel.transform, "BidButton",
-            "Call Landlord", new Vector2(-110, 0), new Vector2(180, 50));
+        Button bid1Button = CreateButton(bidPanel.transform, "Bid1Button",
+            "1 Point", new Vector2(-240, 0), new Vector2(140, 50));
+        Button bid2Button = CreateButton(bidPanel.transform, "Bid2Button",
+            "2 Points", new Vector2(-80, 0), new Vector2(140, 50));
+        Button bid3Button = CreateButton(bidPanel.transform, "Bid3Button",
+            "3 Points", new Vector2(80, 0), new Vector2(140, 50));
         Button noBidButton = CreateButton(bidPanel.transform, "NoBidButton",
-            "Pass", new Vector2(110, 0), new Vector2(180, 50));
+            "Pass", new Vector2(240, 0), new Vector2(140, 50));
 
         // ==================== Play Panel ====================
 
@@ -134,6 +138,15 @@ public class GameSetup : MonoBehaviour
         Button passButton = CreateButton(playPanel.transform, "PassButton",
             "Pass", new Vector2(110, 0), new Vector2(180, 50));
 
+        // ==================== Restart Button ====================
+
+        Button restartButton = CreateButton(canvasObj.transform, "RestartButton",
+            "Play Again", Vector2.zero, new Vector2(200, 60));
+        RectTransform restartRect = restartButton.GetComponent<RectTransform>();
+        restartRect.anchorMin = new Vector2(0.5f, 0.2f);
+        restartRect.anchorMax = new Vector2(0.5f, 0.2f);
+        restartRect.anchoredPosition = Vector2.zero;
+
         // ==================== Wire Everything Up ====================
 
         aiPlayer.Init(turnManager, bidManager);
@@ -142,10 +155,10 @@ public class GameSetup : MonoBehaviour
         uiManager.Init(handView, turnManager, bidManager, aiPlayer);
         uiManager.SetUIElements(
             playButton, passButton,
-            bidButton, noBidButton,
+            bid1Button, bid2Button, bid3Button, noBidButton,
             bidPanel, playPanel,
             messageText, lastPlayedText,
-            playerInfoTexts
+            playerInfoTexts, restartButton
         );
 
         // Start the game

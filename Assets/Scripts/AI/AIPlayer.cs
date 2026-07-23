@@ -32,16 +32,28 @@ public class AIPlayer : MonoBehaviour
         if (playerIndex == 0)
             return;
 
-        bool shouldBid = AIStrategy.ShouldBid(player.Hand);
+        int handScore = AIStrategy.EvaluateHand(player.Hand);
+        int currentHighest = bidManager.GetHighestBid();
 
-        if (shouldBid)
+        // Decide bid score based on hand strength
+        // Strong hand (12+) → bid 3, medium (9+) → bid 2, decent (7+) → bid 1
+        int desiredBid = 0;
+        if (handScore >= 12)
+            desiredBid = 3;
+        else if (handScore >= 9)
+            desiredBid = 2;
+        else if (handScore >= 7)
+            desiredBid = 1;
+
+        // Can only bid higher than current highest
+        if (desiredBid > currentHighest)
         {
-            Debug.Log($"[AI] {player.Name} decides to bid landlord (score: {AIStrategy.EvaluateHand(player.Hand)}).");
-            bidManager.Bid();
+            Debug.Log($"[AI] {player.Name} bids {desiredBid} (hand score: {handScore}).");
+            bidManager.BidScore(desiredBid);
         }
         else
         {
-            Debug.Log($"[AI] {player.Name} decides to pass (score: {AIStrategy.EvaluateHand(player.Hand)}).");
+            Debug.Log($"[AI] {player.Name} passes (hand score: {handScore}, needs > {currentHighest}).");
             bidManager.Pass();
         }
     }
