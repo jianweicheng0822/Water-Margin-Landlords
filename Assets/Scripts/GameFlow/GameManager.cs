@@ -49,7 +49,7 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
-    public GamePhase CurrentPhase { get; private set; } = GamePhase.Idle;
+    public GamePhase CurrentPhase { get; set; } = GamePhase.Idle;
 
     // Three players: index 0 is the human player, 1 and 2 are AI
     public Player[] Players { get; private set; } = new Player[3];
