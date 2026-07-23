@@ -476,6 +476,15 @@ public static class AIStrategy
             case ComboType.StraightPair:
                 FindBeatingStraightPairs(hand, rankGroups, lastPlayed, results);
                 break;
+            case ComboType.Plane:
+            case ComboType.PlaneWithSingles:
+            case ComboType.PlaneWithPairs:
+                FindBeatingPlanes(hand, rankGroups, lastPlayed, results);
+                break;
+            case ComboType.FourWithTwo:
+            case ComboType.FourWithTwoPairs:
+                FindBeatingFourWithTwo(hand, rankGroups, lastPlayed, results);
+                break;
             default:
                 break;
         }
@@ -629,6 +638,169 @@ public static class AIStrategy
 
             if (valid)
                 results.Add(new CardCombo(ComboType.StraightPair, endRank, pairCards));
+        }
+    }
+
+    /// <summary>
+    /// Finds all plane combos (with matching kicker type) that beat the last played plane.
+    /// Searches for consecutive triples with higher rank, then attaches appropriate kickers.
+    /// </summary>
+    private static void FindBeatingPlanes(List<Card> hand, Dictionary<Rank, List<Card>> rankGroups, CardCombo lastPlayed, List<CardCombo> results)
+    {
+        // Determine how many consecutive triples the last played plane has
+        int tripleCount;
+        if (lastPlayed.Type == ComboType.Plane)
+            tripleCount = lastPlayed.Length / 3;
+        else if (lastPlayed.Type == ComboType.PlaneWithSingles)
+            tripleCount = lastPlayed.Length / 4; // 3 per triple + 1 kicker each
+        else // PlaneWithPairs
+            tripleCount = lastPlayed.Length / 5; // 3 per triple + 2 kicker each
+
+        // Find all ranks with 3+ cards that could form consecutive triples
+        List<Rank> tripleRanks = rankGroups
+            .Where(kv => kv.Value.Count >= 3 && kv.Key >= Rank.Three && kv.Key <= Rank.Ace)
+            .Select(kv => kv.Key)
+            .OrderBy(r => r)
+            .ToList();
+
+        // Try all consecutive sequences of the required length
+        for (int i = 0; i <= tripleRanks.Count - tripleCount; i++)
+        {
+            // Check if this subsequence is consecutive
+            List<Rank> sequence = new List<Rank>();
+            bool consecutive = true;
+            for (int j = 0; j < tripleCount; j++)
+            {
+                if (j > 0 && (int)tripleRanks[i + j] - (int)tripleRanks[i + j - 1] != 1)
+                {
+                    consecutive = false;
+                    break;
+                }
+                sequence.Add(tripleRanks[i + j]);
+            }
+
+            if (!consecutive)
+                continue;
+
+            Rank highestRank = sequence[sequence.Count - 1];
+
+            // Must beat the last played (higher main rank)
+            if (highestRank <= lastPlayed.MainRank)
+                continue;
+
+            // Build the triple cards
+            List<Card> planeCards = new List<Card>();
+            HashSet<Rank> usedRanks = new HashSet<Rank>();
+            foreach (Rank rank in sequence)
+            {
+                planeCards.AddRange(rankGroups[rank].Take(3));
+                usedRanks.Add(rank);
+            }
+
+            if (lastPlayed.Type == ComboType.Plane)
+            {
+                // Pure plane, no kickers needed
+                results.Add(new CardCombo(ComboType.Plane, highestRank, planeCards));
+            }
+            else if (lastPlayed.Type == ComboType.PlaneWithSingles)
+            {
+                // Need one single kicker per triple from non-plane ranks
+                List<Card> kickers = new List<Card>();
+                foreach (Card card in hand)
+                {
+                    if (!usedRanks.Contains(card.Rank) && kickers.Count < tripleCount)
+                    {
+                        // Avoid using a card already picked as kicker
+                        if (!kickers.Exists(k => k.Rank == card.Rank && k.Suit == card.Suit))
+                            kickers.Add(card);
+                    }
+                }
+
+                if (kickers.Count == tripleCount)
+                {
+                    List<Card> combo = new List<Card>(planeCards);
+                    combo.AddRange(kickers);
+                    results.Add(new CardCombo(ComboType.PlaneWithSingles, highestRank, combo));
+                }
+            }
+            else // PlaneWithPairs
+            {
+                // Need one pair kicker per triple from non-plane ranks
+                List<Card> kickers = new List<Card>();
+                int pairsFound = 0;
+                foreach (var kv in rankGroups)
+                {
+                    if (!usedRanks.Contains(kv.Key) && kv.Value.Count >= 2 && !kv.Value[0].IsJoker && pairsFound < tripleCount)
+                    {
+                        kickers.AddRange(kv.Value.Take(2));
+                        pairsFound++;
+                    }
+                }
+
+                if (pairsFound == tripleCount)
+                {
+                    List<Card> combo = new List<Card>(planeCards);
+                    combo.AddRange(kickers);
+                    results.Add(new CardCombo(ComboType.PlaneWithPairs, highestRank, combo));
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Finds all four-with-two combos that beat the last played four-with-two.
+    /// Matches the kicker type (singles or pairs) of the last played combo.
+    /// </summary>
+    private static void FindBeatingFourWithTwo(List<Card> hand, Dictionary<Rank, List<Card>> rankGroups, CardCombo lastPlayed, List<CardCombo> results)
+    {
+        foreach (var kv in rankGroups)
+        {
+            if (kv.Value.Count == 4 && kv.Key > lastPlayed.MainRank)
+            {
+                List<Card> quadCards = new List<Card>(kv.Value);
+
+                if (lastPlayed.Type == ComboType.FourWithTwo)
+                {
+                    // Need 2 single kickers from other ranks
+                    List<Card> kickers = new List<Card>();
+                    foreach (Card card in hand)
+                    {
+                        if (card.Rank != kv.Key && kickers.Count < 2)
+                        {
+                            if (!kickers.Exists(k => k.Rank == card.Rank && k.Suit == card.Suit))
+                                kickers.Add(card);
+                        }
+                    }
+
+                    if (kickers.Count == 2)
+                    {
+                        List<Card> combo = new List<Card>(quadCards);
+                        combo.AddRange(kickers);
+                        results.Add(new CardCombo(ComboType.FourWithTwo, kv.Key, combo));
+                    }
+                }
+                else // FourWithTwoPairs
+                {
+                    // Need 2 pair kickers from other ranks
+                    List<Card> kickers = new List<Card>();
+                    int pairsFound = 0;
+                    foreach (var kv2 in rankGroups)
+                    {
+                        if (kv2.Key != kv.Key && kv2.Value.Count >= 2 && !kv2.Value[0].IsJoker && pairsFound < 2)
+                        {
+                            kickers.AddRange(kv2.Value.Take(2));
+                            pairsFound++;
+                        }
+                    }
+
+                    if (pairsFound == 2)
+                    {
+                        List<Card> combo = new List<Card>(quadCards);
+                        combo.AddRange(kickers);
+                        results.Add(new CardCombo(ComboType.FourWithTwoPairs, kv.Key, combo));
+                    }
+                }
+            }
         }
     }
 
