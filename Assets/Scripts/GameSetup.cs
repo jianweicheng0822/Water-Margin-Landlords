@@ -148,6 +148,38 @@ public class GameSetup : MonoBehaviour
         restartRect.anchorMax = new Vector2(0.5f, 0.2f);
         restartRect.anchoredPosition = Vector2.zero;
 
+        // ==================== Pause Menu ====================
+
+        // Full-screen semi-transparent dark overlay
+        GameObject pauseOverlay = CreatePanel(canvasObj.transform, "PauseOverlay",
+            Vector2.zero, Vector2.one, new Color(0, 0, 0, 0.7f));
+
+        // Center panel background
+        GameObject pauseCenter = new GameObject("PauseCenter");
+        pauseCenter.transform.SetParent(pauseOverlay.transform, false);
+        RectTransform pauseCenterRect = pauseCenter.AddComponent<RectTransform>();
+        pauseCenterRect.anchorMin = new Vector2(0.5f, 0.5f);
+        pauseCenterRect.anchorMax = new Vector2(0.5f, 0.5f);
+        pauseCenterRect.sizeDelta = new Vector2(350, 300);
+        Image pauseBg = pauseCenter.AddComponent<Image>();
+        pauseBg.color = new Color(0.15f, 0.12f, 0.1f, 0.95f);
+
+        // "PAUSED" title
+        CreateText(pauseCenter.transform, "PausedTitle", "PAUSED",
+            new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+            new Vector2(0, -40), new Vector2(300, 50), 32);
+
+        // Resume, Restart, Quit buttons
+        Button resumeButton = CreateButton(pauseCenter.transform, "ResumeButton",
+            "Resume", new Vector2(0, 30), new Vector2(220, 50));
+        Button pauseRestartButton = CreateButton(pauseCenter.transform, "PauseRestartButton",
+            "Restart", new Vector2(0, -30), new Vector2(220, 50));
+        Button quitButton = CreateButton(pauseCenter.transform, "QuitButton",
+            "Quit", new Vector2(0, -90), new Vector2(220, 50));
+
+        // Start hidden
+        pauseOverlay.SetActive(false);
+
         // ==================== Wire Everything Up ====================
 
         aiPlayer.Init(turnManager, bidManager);
@@ -161,6 +193,9 @@ public class GameSetup : MonoBehaviour
             messageText, lastPlayedText,
             playerInfoTexts, restartButton
         );
+
+        // Wire pause panel
+        uiManager.SetPausePanel(pauseOverlay, resumeButton, pauseRestartButton, quitButton);
 
         // Start the game
         uiManager.BeginGame();

@@ -31,6 +31,10 @@ public class GameUIManager : MonoBehaviour
     private TextMeshProUGUI[] playerInfoTexts = new TextMeshProUGUI[3];
     private Button restartButton;
 
+    // Pause menu state
+    private GameObject pausePanel;
+    private bool isPaused;
+
     /// <summary>
     /// Initializes references to other managers and UI components.
     /// </summary>
@@ -82,6 +86,55 @@ public class GameUIManager : MonoBehaviour
         bidPanel.SetActive(false);
         playPanel.SetActive(false);
         restartButton.gameObject.SetActive(false);
+    }
+
+    /// <summary>
+    /// Sets the pause panel reference and wires up its button listeners.
+    /// Called by GameSetup after creating the pause overlay.
+    /// </summary>
+    public void SetPausePanel(GameObject panel, Button resumeBtn, Button pauseRestartBtn, Button quitBtn)
+    {
+        pausePanel = panel;
+        resumeBtn.onClick.AddListener(TogglePause);
+        pauseRestartBtn.onClick.AddListener(() =>
+        {
+            TogglePause();
+            OnRestartClicked();
+        });
+        quitBtn.onClick.AddListener(() =>
+        {
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
+        });
+    }
+
+    /// <summary>
+    /// Checks for ESC key press each frame to toggle the pause menu.
+    /// Only active during Bidding or Playing phases.
+    /// </summary>
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            GamePhase phase = GameManager.Instance.CurrentPhase;
+            if (phase == GamePhase.Bidding || phase == GamePhase.Playing)
+            {
+                TogglePause();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Toggles the pause state: shows/hides the pause overlay and freezes/unfreezes time.
+    /// </summary>
+    private void TogglePause()
+    {
+        isPaused = !isPaused;
+        pausePanel.SetActive(isPaused);
+        Time.timeScale = isPaused ? 0f : 1f;
     }
 
     // ==================== Bidding Phase ====================
@@ -360,6 +413,12 @@ public class GameUIManager : MonoBehaviour
     {
         // Cancel any pending AI invokes
         CancelInvoke();
+
+        // Reset pause state in case restarting from pause menu
+        isPaused = false;
+        Time.timeScale = 1f;
+        if (pausePanel != null)
+            pausePanel.SetActive(false);
 
         // Hide restart button
         restartButton.gameObject.SetActive(false);

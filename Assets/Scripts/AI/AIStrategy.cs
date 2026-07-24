@@ -3,6 +3,30 @@ using System.Linq;
 using UnityEngine;
 
 /// <summary>
+/// Lightweight snapshot of the game state for AI decision-making.
+/// Lets the AI consider opponent card counts when choosing plays.
+/// </summary>
+public struct GameContext
+{
+    /// <summary>Number of cards the AI currently holds.</summary>
+    public int MyCardCount;
+
+    /// <summary>Card counts of the other two players (length 2).</summary>
+    public int[] OpponentCounts;
+
+    /// <summary>Returns true if any opponent has 2 or fewer cards remaining.</summary>
+    public bool AnyOpponentDangerous()
+    {
+        for (int i = 0; i < OpponentCounts.Length; i++)
+        {
+            if (OpponentCounts[i] <= 2)
+                return true;
+        }
+        return false;
+    }
+}
+
+/// <summary>
 /// AI strategy for Dou Di Zhu. Handles hand evaluation, hand decomposition,
 /// and play decisions. Designed as a static utility so it can be tested independently.
 /// </summary>
@@ -356,11 +380,19 @@ public static class AIStrategy
     // ==================== Play Decision ====================
 
     /// <summary>
-    /// Chooses which combo to lead with during a free play (no previous combo to beat).
-    /// Strategy: play the smallest non-bomb combo to preserve strong cards.
-    /// Returns null only if hand is empty (should not happen in normal play).
+    /// Backward-compatible overload: leads with smallest non-bomb combo.
     /// </summary>
     public static CardCombo ChooseLeadPlay(List<Card> hand)
+    {
+        return ChooseLeadPlay(hand, default);
+    }
+
+    /// <summary>
+    /// Chooses which combo to lead with during a free play (no previous combo to beat).
+    /// Uses GameContext to adjust strategy based on opponent card counts.
+    /// Returns null only if hand is empty (should not happen in normal play).
+    /// </summary>
+    public static CardCombo ChooseLeadPlay(List<Card> hand, GameContext context)
     {
         List<CardCombo> combos = DecomposeHand(hand);
         if (combos.Count == 0)
@@ -370,7 +402,27 @@ public static class AIStrategy
         if (combos.Count == 1)
             return combos[0];
 
-        // Sort combos: non-bombs first, then by main rank ascending
+        // Endgame rush: if AI has 2 or fewer combos left, play the biggest to finish fast
+        if (combos.Count <= 2)
+        {
+            combos.Sort((a, b) => b.MainRank.CompareTo(a.MainRank));
+            return combos[0];
+        }
+
+        // Opponent danger: if any opponent is about to win, lead with bombs or biggest cards
+        if (context.OpponentCounts != null && context.AnyOpponentDangerous())
+        {
+            // Try to play a bomb/rocket to pressure the opponent
+            CardCombo bomb = combos.Find(c => c.Type == ComboType.Bomb || c.Type == ComboType.Rocket);
+            if (bomb != null)
+                return bomb;
+
+            // Otherwise play the biggest combo to try finishing first
+            combos.Sort((a, b) => b.MainRank.CompareTo(a.MainRank));
+            return combos[0];
+        }
+
+        // Default: play the smallest non-bomb combo to preserve strong cards
         combos.Sort((a, b) =>
         {
             // Bombs and rockets go last
@@ -388,30 +440,76 @@ public static class AIStrategy
     }
 
     /// <summary>
-    /// Chooses which combo to play to beat the last played combo.
-    /// Strategy: find all possible plays that beat it, pick the smallest one.
-    /// Returns null if the AI decides to pass.
+    /// Backward-compatible overload: picks the smallest beating combo.
     /// </summary>
     public static CardCombo ChooseFollowPlay(List<Card> hand, CardCombo lastPlayed)
+    {
+        return ChooseFollowPlay(hand, lastPlayed, default);
+    }
+
+    /// <summary>
+    /// Chooses which combo to play to beat the last played combo.
+    /// Uses GameContext to adjust strategy: win-in-one, opponent danger, strategic pass.
+    /// Returns null if the AI decides to pass.
+    /// </summary>
+    public static CardCombo ChooseFollowPlay(List<Card> hand, CardCombo lastPlayed, GameContext context)
     {
         List<CardCombo> candidates = FindBeatingCombos(hand, lastPlayed);
 
         if (candidates.Count == 0)
             return null; // Must pass
 
-        // Sort by main rank ascending to pick the smallest winning play
-        candidates.Sort((a, b) =>
+        // Win-in-one: if playing any candidate empties the hand, take it immediately
+        foreach (CardCombo c in candidates)
         {
-            // Prefer non-bombs over bombs (save bombs for later)
-            int aWeight = (a.Type == ComboType.Bomb || a.Type == ComboType.Rocket) ? 1 : 0;
-            int bWeight = (b.Type == ComboType.Bomb || b.Type == ComboType.Rocket) ? 1 : 0;
-            if (aWeight != bWeight)
-                return aWeight.CompareTo(bWeight);
+            if (c.Cards.Count == hand.Count)
+                return c;
+        }
 
-            return a.MainRank.CompareTo(b.MainRank);
-        });
+        // Separate normal plays from bombs/rockets
+        List<CardCombo> normal = new List<CardCombo>();
+        List<CardCombo> bombs = new List<CardCombo>();
+        foreach (CardCombo c in candidates)
+        {
+            if (c.Type == ComboType.Bomb || c.Type == ComboType.Rocket)
+                bombs.Add(c);
+            else
+                normal.Add(c);
+        }
 
-        return candidates[0];
+        // Sort each list by rank ascending (smallest first)
+        normal.Sort((a, b) => a.MainRank.CompareTo(b.MainRank));
+        bombs.Sort((a, b) => a.MainRank.CompareTo(b.MainRank));
+
+        bool opponentDangerous = context.OpponentCounts != null && context.AnyOpponentDangerous();
+
+        // Opponent danger: if opponent is about to win, use anything including bombs
+        if (opponentDangerous)
+        {
+            if (normal.Count > 0)
+                return normal[0];
+            if (bombs.Count > 0)
+                return bombs[0];
+        }
+
+        // Strategic pass: if only bombs can beat and the play is small (single/pair),
+        // save bombs unless AI itself has few cards left
+        if (normal.Count == 0 && bombs.Count > 0)
+        {
+            bool playIsSmall = lastPlayed.Type == ComboType.Single || lastPlayed.Type == ComboType.Pair;
+            bool aiHasFewCards = context.MyCardCount > 0 && context.MyCardCount <= 5;
+
+            if (playIsSmall && !aiHasFewCards)
+                return null; // Strategic pass — save the bomb
+
+            return bombs[0];
+        }
+
+        // Default: play the smallest normal (non-bomb) combo
+        if (normal.Count > 0)
+            return normal[0];
+
+        return null;
     }
 
     /// <summary>

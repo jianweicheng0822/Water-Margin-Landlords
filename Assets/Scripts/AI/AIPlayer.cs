@@ -60,7 +60,7 @@ public class AIPlayer : MonoBehaviour
 
     /// <summary>
     /// Called when it's an AI player's turn to play cards.
-    /// Uses AIStrategy to choose the best play.
+    /// Builds a GameContext from the current game state and uses AIStrategy to choose the best play.
     /// </summary>
     public void HandlePlay(int playerIndex)
     {
@@ -70,12 +70,26 @@ public class AIPlayer : MonoBehaviour
         if (playerIndex == 0)
             return;
 
+        // Build game context so AI can consider opponent card counts
+        Player[] players = GameManager.Instance.Players;
+        GameContext context = new GameContext
+        {
+            MyCardCount = player.Hand.Count,
+            OpponentCounts = new int[2]
+        };
+        int idx = 0;
+        for (int i = 0; i < players.Length; i++)
+        {
+            if (i != playerIndex)
+                context.OpponentCounts[idx++] = players[i].Hand.Count;
+        }
+
         CardCombo lastPlayed = turnManager.GetLastPlayedCombo();
 
         if (lastPlayed == null)
         {
-            // Free play: AI leads with smallest combo
-            CardCombo leadPlay = AIStrategy.ChooseLeadPlay(player.Hand);
+            // Free play: AI leads with context-aware strategy
+            CardCombo leadPlay = AIStrategy.ChooseLeadPlay(player.Hand, context);
             if (leadPlay != null)
             {
                 Debug.Log($"[AI] {player.Name} leads with: {leadPlay}");
@@ -84,8 +98,8 @@ public class AIPlayer : MonoBehaviour
         }
         else
         {
-            // Follow play: try to beat the last combo
-            CardCombo followPlay = AIStrategy.ChooseFollowPlay(player.Hand, lastPlayed);
+            // Follow play: try to beat the last combo with context awareness
+            CardCombo followPlay = AIStrategy.ChooseFollowPlay(player.Hand, lastPlayed, context);
             if (followPlay != null)
             {
                 Debug.Log($"[AI] {player.Name} beats with: {followPlay}");
