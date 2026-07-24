@@ -28,6 +28,7 @@ public class GameSetup : MonoBehaviour
         GameManager gameManager = managerObj.AddComponent<GameManager>();
         TurnManager turnManager = managerObj.AddComponent<TurnManager>();
         BidManager bidManager = managerObj.AddComponent<BidManager>();
+        ScoreManager scoreManager = managerObj.AddComponent<ScoreManager>();
         AIPlayer aiPlayer = managerObj.AddComponent<AIPlayer>();
 
         // ==================== Canvas ====================
@@ -152,7 +153,7 @@ public class GameSetup : MonoBehaviour
         aiPlayer.Init(turnManager, bidManager);
         GameUIManager uiManager = canvasObj.AddComponent<GameUIManager>();
         handView.Init(uiManager);
-        uiManager.Init(handView, turnManager, bidManager, aiPlayer);
+        uiManager.Init(handView, turnManager, bidManager, scoreManager, aiPlayer);
         uiManager.SetUIElements(
             playButton, passButton,
             bid1Button, bid2Button, bid3Button, noBidButton,

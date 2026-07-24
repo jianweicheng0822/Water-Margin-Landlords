@@ -23,6 +23,17 @@ public class TurnManager : MonoBehaviour
     // Whether the playing phase is active
     private bool isPlaying;
 
+    // Reference to score manager for tracking bombs/rockets
+    private ScoreManager scoreManager;
+
+    /// <summary>
+    /// Sets the score manager reference. Called during setup.
+    /// </summary>
+    public void SetScoreManager(ScoreManager manager)
+    {
+        scoreManager = manager;
+    }
+
     /// <summary>
     /// Starts the playing phase. The landlord goes first with a free play.
     /// </summary>
@@ -74,6 +85,10 @@ public class TurnManager : MonoBehaviour
 
         // Remove the played cards from the player's hand
         RemoveCardsFromHand(player, selectedCards);
+
+        // Record the play for scoring (tracks bombs/rockets/play counts)
+        if (scoreManager != null)
+            scoreManager.RecordPlay(currentPlayerIndex, combo);
 
         // Update table state
         lastPlayedCombo = combo;

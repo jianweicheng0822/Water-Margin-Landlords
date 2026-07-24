@@ -14,6 +14,7 @@ public class GameUIManager : MonoBehaviour
     private HandView handView;
     private TurnManager turnManager;
     private BidManager bidManager;
+    private ScoreManager scoreManager;
     private AIPlayer aiPlayer;
 
     // UI elements (created by GameSetup)
@@ -33,12 +34,16 @@ public class GameUIManager : MonoBehaviour
     /// <summary>
     /// Initializes references to other managers and UI components.
     /// </summary>
-    public void Init(HandView handView, TurnManager turnManager, BidManager bidManager, AIPlayer aiPlayer)
+    public void Init(HandView handView, TurnManager turnManager, BidManager bidManager, ScoreManager scoreManager, AIPlayer aiPlayer)
     {
         this.handView = handView;
         this.turnManager = turnManager;
         this.bidManager = bidManager;
+        this.scoreManager = scoreManager;
         this.aiPlayer = aiPlayer;
+
+        // Wire score manager into turn manager for play tracking
+        turnManager.SetScoreManager(scoreManager);
     }
 
     /// <summary>
@@ -197,6 +202,9 @@ public class GameUIManager : MonoBehaviour
         RefreshHand();
         UpdatePlayerInfo();
 
+        // Initialize score tracking with the bid score
+        scoreManager.ResetForNewGame(bidManager.FinalBidScore);
+
         // Start playing phase
         turnManager.StartPlaying();
 
@@ -317,15 +325,29 @@ public class GameUIManager : MonoBehaviour
         playPanel.SetActive(false);
         bidPanel.SetActive(false);
 
-        // Find who won
+        // Find who won and calculate scores
         Player winner = GameManager.Instance.Players.FirstOrDefault(p => p.Hand.Count == 0);
         if (winner != null)
         {
-            if (winner.IsLandlord)
-                SetMessage($"Game Over! {winner.Name} (Landlord) wins!");
-            else
-                SetMessage($"Game Over! Farmers win! ({winner.Name} finished first)");
+            scoreManager.CalculateScores(winner.Index);
+
+            // Build result message with score details
+            string winMsg = winner.IsLandlord
+                ? $"Game Over! {winner.Name} (Landlord) wins!"
+                : $"Game Over! Farmers win! ({winner.Name} finished first)";
+
+            string scoreMsg = "\n";
+            for (int i = 0; i < 3; i++)
+            {
+                Player p = GameManager.Instance.Players[i];
+                string change = ScoreManager.FormatScoreChange(scoreManager.LastRoundScores[i]);
+                scoreMsg += $"{p.Name}: {change} (Total: {scoreManager.TotalScores[i]})  ";
+            }
+
+            SetMessage(winMsg + scoreMsg);
         }
+
+        UpdatePlayerInfo();
 
         // Show restart button
         restartButton.gameObject.SetActive(true);
@@ -398,7 +420,8 @@ public class GameUIManager : MonoBehaviour
         {
             Player p = GameManager.Instance.Players[i];
             string role = p.IsLandlord ? " [Landlord]" : "";
-            playerInfoTexts[i].text = $"{p.Name}{role}\nCards: {p.Hand.Count}";
+            string score = scoreManager != null ? $" | Score: {scoreManager.TotalScores[i]}" : "";
+            playerInfoTexts[i].text = $"{p.Name}{role}\nCards: {p.Hand.Count}{score}";
         }
     }
 
