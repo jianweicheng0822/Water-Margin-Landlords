@@ -68,6 +68,12 @@ public class GameManager : MonoBehaviour
         Instance = this;
     }
 
+    private void OnDestroy()
+    {
+        // Clear singleton reference so a new instance can be created
+        if (Instance == this) Instance = null;
+    }
+
     /// <summary>
     /// Starts a new game: creates players, deals cards.
     /// </summary>

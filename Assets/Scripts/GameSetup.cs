@@ -14,19 +14,27 @@ public class GameSetup : MonoBehaviour
     // Cached Chinese font asset for all TMP text elements
     private TMP_FontAsset chineseFont;
 
+    // Shared canvas used by both menu and game
+    private GameObject canvasObj;
+
+    // Main menu panel - hidden when game starts, shown when returning to menu
+    private GameObject menuPanel;
+
+    // All game objects created by CreateGame, stored for cleanup when returning to menu
+    private GameObject gameObjectsRoot;
+
     private void Start()
     {
-        CreateGame();
+        SetupSharedResources();
+        CreateMainMenu();
     }
 
     /// <summary>
-    /// Creates all game objects, managers, and UI elements.
+    /// Initializes font, canvas, and event system shared by menu and game.
     /// </summary>
-    private void CreateGame()
+    private void SetupSharedResources()
     {
-        // ==================== Load Chinese Font ====================
-
-        // Create TMP font dynamically from .ttf at runtime (supports full character set)
+        // Load Chinese font
         Font notoFont = Resources.Load<Font>("NotoSansSC-Regular");
         if (notoFont != null)
         {
@@ -37,20 +45,8 @@ public class GameSetup : MonoBehaviour
             Debug.LogWarning("NotoSansSC-Regular.ttf not found in Resources. Chinese text will not display.");
         }
 
-        // ==================== Managers ====================
-
-        // Create a central manager object with all game flow components
-        GameObject managerObj = new GameObject("GameManagers");
-        GameManager gameManager = managerObj.AddComponent<GameManager>();
-        TurnManager turnManager = managerObj.AddComponent<TurnManager>();
-        BidManager bidManager = managerObj.AddComponent<BidManager>();
-        ScoreManager scoreManager = managerObj.AddComponent<ScoreManager>();
-        AIPlayer aiPlayer = managerObj.AddComponent<AIPlayer>();
-
-        // ==================== Canvas ====================
-
         // Create the main UI canvas
-        GameObject canvasObj = new GameObject("Canvas");
+        canvasObj = new GameObject("Canvas");
         Canvas canvas = canvasObj.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 0;
@@ -67,12 +63,157 @@ public class GameSetup : MonoBehaviour
             eventSystem.AddComponent<UnityEngine.EventSystems.EventSystem>();
             eventSystem.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
         }
+    }
+
+    /// <summary>
+    /// Creates the main menu with background, title, and start/quit buttons.
+    /// </summary>
+    private void CreateMainMenu()
+    {
+        menuPanel = new GameObject("MenuPanel");
+        menuPanel.transform.SetParent(canvasObj.transform, false);
+        RectTransform menuRect = menuPanel.AddComponent<RectTransform>();
+        menuRect.anchorMin = Vector2.zero;
+        menuRect.anchorMax = Vector2.one;
+        menuRect.offsetMin = Vector2.zero;
+        menuRect.offsetMax = Vector2.zero;
+
+        // Full-screen menu background image
+        GameObject bgObj = new GameObject("MenuBackground");
+        bgObj.transform.SetParent(menuPanel.transform, false);
+        RectTransform bgRect = bgObj.AddComponent<RectTransform>();
+        bgRect.anchorMin = Vector2.zero;
+        bgRect.anchorMax = Vector2.one;
+        bgRect.offsetMin = Vector2.zero;
+        bgRect.offsetMax = Vector2.zero;
+        Image bgImage = bgObj.AddComponent<Image>();
+        bgImage.raycastTarget = false;
+
+        Texture2D menuBgTex = Resources.Load<Texture2D>("Sprites/menu_background");
+        if (menuBgTex != null)
+        {
+            bgImage.sprite = Sprite.Create(menuBgTex,
+                new Rect(0, 0, menuBgTex.width, menuBgTex.height),
+                new Vector2(0.5f, 0.5f));
+            bgImage.type = Image.Type.Simple;
+            bgImage.preserveAspect = false;
+        }
+        else
+        {
+            bgImage.color = new Color(0.1f, 0.08f, 0.06f);
+            Debug.LogWarning("Menu background image not found: Sprites/menu_background");
+        }
+
+        // Semi-transparent dark overlay in center for readability
+        GameObject overlay = new GameObject("CenterOverlay");
+        overlay.transform.SetParent(menuPanel.transform, false);
+        RectTransform overlayRect = overlay.AddComponent<RectTransform>();
+        overlayRect.anchorMin = new Vector2(0.3f, 0.2f);
+        overlayRect.anchorMax = new Vector2(0.7f, 0.8f);
+        overlayRect.offsetMin = Vector2.zero;
+        overlayRect.offsetMax = Vector2.zero;
+        Image overlayImg = overlay.AddComponent<Image>();
+        overlayImg.color = new Color(0, 0, 0, 0.5f);
+        overlayImg.raycastTarget = false;
+
+        // Game title - large gold text
+        TextMeshProUGUI titleText = CreateText(menuPanel.transform, "TitleText",
+            "\u6c34\u6d52\u4f20\u6597\u5730\u4e3b",  // 水浒传斗地主
+            new Vector2(0.5f, 0.7f), new Vector2(0.5f, 0.7f),
+            Vector2.zero, new Vector2(800, 80), 56);
+        titleText.color = new Color(0.95f, 0.85f, 0.55f); // Gold
+        titleText.fontStyle = FontStyles.Bold;
+
+        // Subtitle - smaller white text
+        CreateText(menuPanel.transform, "SubtitleText",
+            "Water Margin Landlords",
+            new Vector2(0.5f, 0.62f), new Vector2(0.5f, 0.62f),
+            Vector2.zero, new Vector2(600, 40), 22);
+
+        // Start Game button
+        Button startButton = CreateButton(menuPanel.transform, "StartButton",
+            "\u5f00\u59cb\u6e38\u620f", Vector2.zero, new Vector2(240, 55));  // 开始游戏
+        RectTransform startRect = startButton.GetComponent<RectTransform>();
+        startRect.anchorMin = new Vector2(0.5f, 0.42f);
+        startRect.anchorMax = new Vector2(0.5f, 0.42f);
+        startRect.anchoredPosition = Vector2.zero;
+
+        startButton.onClick.AddListener(() =>
+        {
+            menuPanel.SetActive(false);
+            CreateGame();
+        });
+
+        // Quit Game button
+        Button quitButton = CreateButton(menuPanel.transform, "QuitButton",
+            "\u9000\u51fa\u6e38\u620f", Vector2.zero, new Vector2(240, 55));  // 退出游戏
+        RectTransform quitRect = quitButton.GetComponent<RectTransform>();
+        quitRect.anchorMin = new Vector2(0.5f, 0.33f);
+        quitRect.anchorMax = new Vector2(0.5f, 0.33f);
+        quitRect.anchoredPosition = Vector2.zero;
+
+        quitButton.onClick.AddListener(() =>
+        {
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
+        });
+    }
+
+    /// <summary>
+    /// Destroys all game objects and returns to the main menu.
+    /// </summary>
+    public void ReturnToMainMenu()
+    {
+        // Restore time scale in case we came from pause
+        Time.timeScale = 1f;
+
+        // Destroy all game-specific objects
+        if (gameObjectsRoot != null)
+        {
+            Destroy(gameObjectsRoot);
+            gameObjectsRoot = null;
+        }
+
+        // Destroy GameManagers (singletons etc.)
+        GameObject managers = GameObject.Find("GameManagers");
+        if (managers != null) Destroy(managers);
+
+        // Show the main menu again
+        menuPanel.SetActive(true);
+    }
+
+    /// <summary>
+    /// Creates all game objects, managers, and UI elements.
+    /// </summary>
+    private void CreateGame()
+    {
+        // Container for all game objects so we can destroy them when returning to menu
+        gameObjectsRoot = new GameObject("GameObjects");
+        gameObjectsRoot.transform.SetParent(canvasObj.transform, false);
+        RectTransform rootRect = gameObjectsRoot.AddComponent<RectTransform>();
+        rootRect.anchorMin = Vector2.zero;
+        rootRect.anchorMax = Vector2.one;
+        rootRect.offsetMin = Vector2.zero;
+        rootRect.offsetMax = Vector2.zero;
+
+        // ==================== Managers ====================
+
+        // Create a central manager object with all game flow components
+        GameObject managerObj = new GameObject("GameManagers");
+        GameManager gameManager = managerObj.AddComponent<GameManager>();
+        TurnManager turnManager = managerObj.AddComponent<TurnManager>();
+        BidManager bidManager = managerObj.AddComponent<BidManager>();
+        ScoreManager scoreManager = managerObj.AddComponent<ScoreManager>();
+        AIPlayer aiPlayer = managerObj.AddComponent<AIPlayer>();
 
         // ==================== Background ====================
 
         // Load Water Margin ink wash background image
         GameObject bgObj = new GameObject("Background");
-        bgObj.transform.SetParent(canvasObj.transform, false);
+        bgObj.transform.SetParent(gameObjectsRoot.transform, false);
         RectTransform bgRect = bgObj.AddComponent<RectTransform>();
         bgRect.anchorMin = Vector2.zero;
         bgRect.anchorMax = Vector2.one;
@@ -100,7 +241,7 @@ public class GameSetup : MonoBehaviour
         // ==================== Player Hand Area (Bottom) ====================
 
         GameObject handArea = new GameObject("HandArea");
-        handArea.transform.SetParent(canvasObj.transform, false);
+        handArea.transform.SetParent(gameObjectsRoot.transform, false);
         RectTransform handRect = handArea.AddComponent<RectTransform>();
         handRect.anchorMin = new Vector2(0.5f, 0);
         handRect.anchorMax = new Vector2(0.5f, 0);
@@ -112,20 +253,20 @@ public class GameSetup : MonoBehaviour
         // ==================== Player Info Labels ====================
 
         // Player 0 (Human) - bottom center, above hand area
-        TextMeshProUGUI playerInfo0 = CreateText(canvasObj.transform, "PlayerInfo_You",
+        TextMeshProUGUI playerInfo0 = CreateText(gameObjectsRoot.transform, "PlayerInfo_You",
             "\u4f60",  // 你
             new Vector2(0.5f, 0), new Vector2(0.5f, 0),
             new Vector2(0, 220), new Vector2(300, 30), 14);
 
         // Player 1 (AI Left) - top left corner
-        TextMeshProUGUI playerInfo1 = CreateText(canvasObj.transform, "PlayerInfo_Left",
+        TextMeshProUGUI playerInfo1 = CreateText(gameObjectsRoot.transform, "PlayerInfo_Left",
             "\u6797\u51b2 | \u624b\u724c: 17",  // 林冲 | 手牌: 17
             new Vector2(0, 1), new Vector2(0, 1),
             new Vector2(120, -30), new Vector2(220, 30), 16);
 
         // Player 1 (AI Left) card backs area - below info label
         GameObject aiCards1 = new GameObject("AICards_Left");
-        aiCards1.transform.SetParent(canvasObj.transform, false);
+        aiCards1.transform.SetParent(gameObjectsRoot.transform, false);
         RectTransform aiCards1Rect = aiCards1.AddComponent<RectTransform>();
         aiCards1Rect.anchorMin = new Vector2(0, 1);
         aiCards1Rect.anchorMax = new Vector2(0, 1);
@@ -134,14 +275,14 @@ public class GameSetup : MonoBehaviour
         aiCards1Rect.sizeDelta = new Vector2(200, 50);
 
         // Player 2 (AI Right) - top right corner
-        TextMeshProUGUI playerInfo2 = CreateText(canvasObj.transform, "PlayerInfo_Right",
+        TextMeshProUGUI playerInfo2 = CreateText(gameObjectsRoot.transform, "PlayerInfo_Right",
             "\u9c81\u667a\u6df1 | \u624b\u724c: 17",  // 鲁智深 | 手牌: 17
             new Vector2(1, 1), new Vector2(1, 1),
             new Vector2(-130, -30), new Vector2(240, 30), 16);
 
         // Player 2 (AI Right) card backs area - below info label
         GameObject aiCards2 = new GameObject("AICards_Right");
-        aiCards2.transform.SetParent(canvasObj.transform, false);
+        aiCards2.transform.SetParent(gameObjectsRoot.transform, false);
         RectTransform aiCards2Rect = aiCards2.AddComponent<RectTransform>();
         aiCards2Rect.anchorMin = new Vector2(1, 1);
         aiCards2Rect.anchorMax = new Vector2(1, 1);
@@ -155,7 +296,7 @@ public class GameSetup : MonoBehaviour
 
         // Player 0 (Human) played cards - center, below AI played areas
         GameObject playedArea0 = new GameObject("PlayedCards_You");
-        playedArea0.transform.SetParent(canvasObj.transform, false);
+        playedArea0.transform.SetParent(gameObjectsRoot.transform, false);
         RectTransform played0Rect = playedArea0.AddComponent<RectTransform>();
         played0Rect.anchorMin = new Vector2(0.5f, 0.38f);
         played0Rect.anchorMax = new Vector2(0.5f, 0.38f);
@@ -165,7 +306,7 @@ public class GameSetup : MonoBehaviour
 
         // Player 1 (AI Left) played cards - center-left, closer to middle
         GameObject playedArea1 = new GameObject("PlayedCards_Left");
-        playedArea1.transform.SetParent(canvasObj.transform, false);
+        playedArea1.transform.SetParent(gameObjectsRoot.transform, false);
         RectTransform played1Rect = playedArea1.AddComponent<RectTransform>();
         played1Rect.anchorMin = new Vector2(0.35f, 0.65f);
         played1Rect.anchorMax = new Vector2(0.35f, 0.65f);
@@ -175,7 +316,7 @@ public class GameSetup : MonoBehaviour
 
         // Player 2 (AI Right) played cards - center-right, closer to middle
         GameObject playedArea2 = new GameObject("PlayedCards_Right");
-        playedArea2.transform.SetParent(canvasObj.transform, false);
+        playedArea2.transform.SetParent(gameObjectsRoot.transform, false);
         RectTransform played2Rect = playedArea2.AddComponent<RectTransform>();
         played2Rect.anchorMin = new Vector2(0.65f, 0.65f);
         played2Rect.anchorMax = new Vector2(0.65f, 0.65f);
@@ -188,13 +329,13 @@ public class GameSetup : MonoBehaviour
         // ==================== Center Area ====================
 
         // Message text (top center)
-        TextMeshProUGUI messageText = CreateText(canvasObj.transform, "MessageText",
+        TextMeshProUGUI messageText = CreateText(gameObjectsRoot.transform, "MessageText",
             "\u6b22\u8fce\u6765\u5230\u6c34\u6d52\u4f20\u6597\u5730\u4e3b\uff01",  // 欢迎来到水浒传斗地主！
             new Vector2(0.5f, 0.95f), new Vector2(0.5f, 0.95f),
             Vector2.zero, new Vector2(600, 40), 20);
 
         // Combo type label (center, between played areas)
-        TextMeshProUGUI lastPlayedText = CreateText(canvasObj.transform, "LastPlayedText",
+        TextMeshProUGUI lastPlayedText = CreateText(gameObjectsRoot.transform, "LastPlayedText",
             "",
             new Vector2(0.5f, 0.52f), new Vector2(0.5f, 0.52f),
             Vector2.zero, new Vector2(300, 30), 16);
@@ -202,7 +343,7 @@ public class GameSetup : MonoBehaviour
         // ==================== Bid Panel ====================
 
         GameObject bidPanel = new GameObject("BidPanel");
-        bidPanel.transform.SetParent(canvasObj.transform, false);
+        bidPanel.transform.SetParent(gameObjectsRoot.transform, false);
         RectTransform bidPanelRect = bidPanel.AddComponent<RectTransform>();
         bidPanelRect.anchorMin = new Vector2(0.5f, 0);
         bidPanelRect.anchorMax = new Vector2(0.5f, 0);
@@ -221,7 +362,7 @@ public class GameSetup : MonoBehaviour
         // ==================== Play Panel ====================
 
         GameObject playPanel = new GameObject("PlayPanel");
-        playPanel.transform.SetParent(canvasObj.transform, false);
+        playPanel.transform.SetParent(gameObjectsRoot.transform, false);
         RectTransform playPanelRect = playPanel.AddComponent<RectTransform>();
         playPanelRect.anchorMin = new Vector2(0.5f, 0);
         playPanelRect.anchorMax = new Vector2(0.5f, 0);
@@ -235,7 +376,7 @@ public class GameSetup : MonoBehaviour
 
         // ==================== Restart Button ====================
 
-        Button restartButton = CreateButton(canvasObj.transform, "RestartButton",
+        Button restartButton = CreateButton(gameObjectsRoot.transform, "RestartButton",
             "\u518d\u6765\u4e00\u5c40", Vector2.zero, new Vector2(200, 50));  // 再来一局
         RectTransform restartRect = restartButton.GetComponent<RectTransform>();
         restartRect.anchorMin = new Vector2(0.5f, 0.5f);
@@ -246,7 +387,7 @@ public class GameSetup : MonoBehaviour
 
         // Skill panel (right side) - placeholder frame
         GameObject skillPanel = new GameObject("SkillPanel");
-        skillPanel.transform.SetParent(canvasObj.transform, false);
+        skillPanel.transform.SetParent(gameObjectsRoot.transform, false);
         RectTransform skillRect = skillPanel.AddComponent<RectTransform>();
         skillRect.anchorMin = new Vector2(1, 0);
         skillRect.anchorMax = new Vector2(1, 0);
@@ -268,7 +409,7 @@ public class GameSetup : MonoBehaviour
         // ==================== Pause Menu ====================
 
         // Full-screen semi-transparent dark overlay
-        GameObject pauseOverlay = CreatePanel(canvasObj.transform, "PauseOverlay",
+        GameObject pauseOverlay = CreatePanel(gameObjectsRoot.transform, "PauseOverlay",
             Vector2.zero, Vector2.one, new Color(0, 0, 0, 0.7f));
 
         // Center panel background
@@ -277,7 +418,7 @@ public class GameSetup : MonoBehaviour
         RectTransform pauseCenterRect = pauseCenter.AddComponent<RectTransform>();
         pauseCenterRect.anchorMin = new Vector2(0.5f, 0.5f);
         pauseCenterRect.anchorMax = new Vector2(0.5f, 0.5f);
-        pauseCenterRect.sizeDelta = new Vector2(350, 300);
+        pauseCenterRect.sizeDelta = new Vector2(350, 360);
         Image pauseBg = pauseCenter.AddComponent<Image>();
         pauseBg.color = new Color(0.15f, 0.12f, 0.1f, 0.95f);
 
@@ -286,13 +427,15 @@ public class GameSetup : MonoBehaviour
             new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
             new Vector2(0, -40), new Vector2(300, 50), 32);
 
-        // Resume, Restart, Quit buttons
+        // Resume, Restart, Return to Menu, Quit buttons
         Button resumeButton = CreateButton(pauseCenter.transform, "ResumeButton",
-            "\u7ee7\u7eed\u6e38\u620f", new Vector2(0, 30), new Vector2(220, 50));  // 继续游戏
+            "\u7ee7\u7eed\u6e38\u620f", new Vector2(0, 50), new Vector2(220, 50));  // 继续游戏
         Button pauseRestartButton = CreateButton(pauseCenter.transform, "PauseRestartButton",
-            "\u91cd\u65b0\u5f00\u59cb", new Vector2(0, -30), new Vector2(220, 50));  // 重新开始
+            "\u91cd\u65b0\u5f00\u59cb", new Vector2(0, -10), new Vector2(220, 50));  // 重新开始
+        Button mainMenuButton = CreateButton(pauseCenter.transform, "MainMenuButton",
+            "\u8fd4\u56de\u4e3b\u83dc\u5355", new Vector2(0, -70), new Vector2(220, 50));  // 返回主菜单
         Button quitButton = CreateButton(pauseCenter.transform, "QuitButton",
-            "\u9000\u51fa\u6e38\u620f", new Vector2(0, -90), new Vector2(220, 50));  // 退出游戏
+            "\u9000\u51fa\u6e38\u620f", new Vector2(0, -130), new Vector2(220, 50));  // 退出游戏
 
         // Start hidden
         pauseOverlay.SetActive(false);
@@ -300,7 +443,7 @@ public class GameSetup : MonoBehaviour
         // ==================== Wire Everything Up ====================
 
         aiPlayer.Init(turnManager, bidManager);
-        GameUIManager uiManager = canvasObj.AddComponent<GameUIManager>();
+        GameUIManager uiManager = gameObjectsRoot.AddComponent<GameUIManager>();
         handView.Init(uiManager);
         uiManager.Init(handView, turnManager, bidManager, scoreManager, aiPlayer);
         Transform[] aiCardAreas = { aiCards1.transform, aiCards2.transform };
@@ -315,6 +458,9 @@ public class GameSetup : MonoBehaviour
 
         // Wire pause panel
         uiManager.SetPausePanel(pauseOverlay, resumeButton, pauseRestartButton, quitButton);
+
+        // Wire "return to main menu" button - calls ReturnToMainMenu on this GameSetup
+        mainMenuButton.onClick.AddListener(ReturnToMainMenu);
 
         // Start the game
         uiManager.BeginGame();
