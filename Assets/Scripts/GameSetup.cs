@@ -156,21 +156,22 @@ public class GameSetup : MonoBehaviour
             Debug.LogWarning("Menu logo not found: Sprites/menu_logo");
         }
 
-        // Subtitle below logo - can be localized independently
-        TextMeshProUGUI subtitleText = CreateText(menuPanel.transform, "SubtitleText",
-            "Water Margin Landlords",
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-            Vector2.zero, new Vector2(600, 40), 22);
-        subtitleText.color = new Color(0.85f, 0.75f, 0.5f);
-        subtitleText.outlineWidth = 0.25f;
-        subtitleText.outlineColor = new Color32(20, 15, 10, 255);
+        // Fine outline to separate logo from busy background
+        Outline logoOutline = logoObj.AddComponent<Outline>();
+        logoOutline.effectColor = new Color(0.07f, 0.04f, 0.02f, 1f); // Deep carbon brown
+        logoOutline.effectDistance = new Vector2(2f, -2f);
 
-        // Start Game button
+        // Soft shadow simulating ink wash diffusion ("墨晕" effect)
+        Shadow logoShadow = logoObj.AddComponent<Shadow>();
+        logoShadow.effectColor = new Color(0.07f, 0.04f, 0.02f, 0.6f); // Semi-transparent dark brown
+        logoShadow.effectDistance = new Vector2(4f, -4f);
+
+        // Start Game button — larger size as primary action
         Button startButton = CreateButton(menuPanel.transform, "StartButton",
-            "\u5f00\u59cb\u6e38\u620f", Vector2.zero, new Vector2(240, 55));  // 开始游戏
+            "\u5f00\u59cb\u6e38\u620f", Vector2.zero, new Vector2(280, 62));  // 开始游戏
         RectTransform startRect = startButton.GetComponent<RectTransform>();
-        startRect.anchorMin = new Vector2(0.5f, 0.4f);
-        startRect.anchorMax = new Vector2(0.5f, 0.4f);
+        startRect.anchorMin = new Vector2(0.5f, 0.38f);
+        startRect.anchorMax = new Vector2(0.5f, 0.38f);
         startRect.anchoredPosition = Vector2.zero;
 
         startButton.onClick.AddListener(() =>
@@ -179,12 +180,12 @@ public class GameSetup : MonoBehaviour
             CreateGame();
         });
 
-        // Quit Game button
+        // Quit Game button — smaller size as secondary action
         Button quitButton = CreateButton(menuPanel.transform, "QuitButton",
             "\u9000\u51fa\u6e38\u620f", Vector2.zero, new Vector2(240, 55));  // 退出游戏
         RectTransform quitRect = quitButton.GetComponent<RectTransform>();
-        quitRect.anchorMin = new Vector2(0.5f, 0.32f);
-        quitRect.anchorMax = new Vector2(0.5f, 0.32f);
+        quitRect.anchorMin = new Vector2(0.5f, 0.27f);
+        quitRect.anchorMax = new Vector2(0.5f, 0.27f);
         quitRect.anchoredPosition = Vector2.zero;
 
         quitButton.onClick.AddListener(() =>
@@ -560,27 +561,43 @@ public class GameSetup : MonoBehaviour
         Image img = obj.AddComponent<Image>();
         if (buttonSprite != null)
         {
-            // Use themed button background image
+            // Use themed wooden plaque background
             img.sprite = buttonSprite;
             img.type = Image.Type.Simple;
             img.preserveAspect = false;
-            img.color = Color.white; // No tint, show image as-is
+            img.color = Color.white;
+
+            // Apply shader to remove fake checkerboard background
+            Shader whiteToTransparent = Shader.Find("UI/WhiteToTransparent");
+            if (whiteToTransparent != null)
+            {
+                Material btnMat = new Material(whiteToTransparent);
+                btnMat.SetFloat("_Threshold", 0.75f);
+                btnMat.SetFloat("_Softness", 0.25f);
+                img.material = btnMat;
+            }
         }
         else
         {
-            // Fallback to solid color if sprite not found
             img.color = new Color(0.15f, 0.12f, 0.08f, 0.9f);
-            Outline btnOutline = obj.AddComponent<Outline>();
-            btnOutline.effectColor = new Color(0.7f, 0.6f, 0.35f);
-            btnOutline.effectDistance = new Vector2(1.5f, 1.5f);
         }
+
+        // Diagonal ink wash glow behind the wooden plaque
+        Shadow btnShadow = obj.AddComponent<Shadow>();
+        btnShadow.effectColor = new Color(0.05f, 0.03f, 0.01f, 0.5f);
+        btnShadow.effectDistance = new Vector2(3f, -3f);
+
+        // Vertical contact shadow — makes the plaque feel "resting" on the scene
+        Shadow contactShadow = obj.AddComponent<Shadow>();
+        contactShadow.effectColor = new Color(0.02f, 0.01f, 0f, 0.7f);
+        contactShadow.effectDistance = new Vector2(0f, -4f);
 
         Button btn = obj.AddComponent<Button>();
         ColorBlock colors = btn.colors;
-        colors.normalColor = Color.white;                              // Original image colors
-        colors.highlightedColor = new Color(1f, 0.92f, 0.75f, 1f);    // Warm golden glow on hover
+        colors.normalColor = Color.white;
+        colors.highlightedColor = new Color(1f, 0.92f, 0.75f, 1f);    // Warm glow on hover
         colors.pressedColor = new Color(0.7f, 0.65f, 0.55f, 1f);      // Darker when pressed
-        colors.disabledColor = new Color(0.4f, 0.4f, 0.4f, 0.6f);     // Greyed out when disabled
+        colors.disabledColor = new Color(0.4f, 0.4f, 0.4f, 0.6f);
         btn.colors = colors;
 
         // Button label text - gold color to match theme
@@ -598,6 +615,11 @@ public class GameSetup : MonoBehaviour
         tmp.fontSize = 22;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = new Color(0.95f, 0.85f, 0.55f); // Gold text
+
+        // Text outline for readability on the wooden plaque
+        Outline textOutline = textObj.AddComponent<Outline>();
+        textOutline.effectColor = new Color(0.07f, 0.04f, 0.02f, 1f);
+        textOutline.effectDistance = new Vector2(1f, -1f);
 
         return btn;
     }
