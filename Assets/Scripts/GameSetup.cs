@@ -124,6 +124,16 @@ public class GameSetup : MonoBehaviour
                 new Vector2(0.5f, 0.5f));
             logoImg.type = Image.Type.Simple;
             logoImg.preserveAspect = true;
+
+            // Apply white-to-transparent shader so the white background disappears
+            Shader whiteToTransparent = Shader.Find("UI/WhiteToTransparent");
+            if (whiteToTransparent != null)
+            {
+                Material logoMat = new Material(whiteToTransparent);
+                logoMat.SetFloat("_Threshold", 0.85f);
+                logoMat.SetFloat("_Softness", 0.35f);
+                logoImg.material = logoMat;
+            }
         }
         else
         {
