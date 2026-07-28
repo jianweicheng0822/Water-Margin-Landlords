@@ -17,7 +17,6 @@ public class CardView : MonoBehaviour
     // UI components
     private Image cardImage;
     private RectTransform rectTransform;
-    private Button button;
 
     // Visual constants
     private static readonly Color NORMAL_TINT = Color.white;
@@ -121,6 +120,7 @@ public class CardView : MonoBehaviour
 
     /// <summary>
     /// Builds the card's UI using the artwork sprite.
+    /// No Button component - selection is handled by HandView's drag system.
     /// </summary>
     private void SetupUI()
     {
@@ -139,9 +139,8 @@ public class CardView : MonoBehaviour
         }
         cardImage.color = NORMAL_TINT;
 
-        // Click button for selection
-        button = gameObject.AddComponent<Button>();
-        button.onClick.AddListener(OnClick);
+        // Image acts as raycast target for HandView hit detection
+        cardImage.raycastTarget = true;
     }
 
     /// <summary>
@@ -153,11 +152,22 @@ public class CardView : MonoBehaviour
     }
 
     /// <summary>
-    /// Handles card click - toggles selection state.
+    /// Toggles selection state. Called by HandView's drag/click system.
     /// </summary>
-    private void OnClick()
+    public void ToggleSelection()
     {
         isSelected = !isSelected;
+        UpdateVisual();
+        parentHandView?.OnCardSelectionChanged();
+    }
+
+    /// <summary>
+    /// Sets selection state directly. Called by HandView during drag operations.
+    /// </summary>
+    public void SetSelected(bool selected)
+    {
+        if (isSelected == selected) return;
+        isSelected = selected;
         UpdateVisual();
         parentHandView?.OnCardSelectionChanged();
     }

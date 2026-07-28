@@ -70,8 +70,32 @@ public class GameSetup : MonoBehaviour
 
         // ==================== Background ====================
 
-        GameObject bgObj = CreatePanel(canvasObj.transform, "Background",
-            Vector2.zero, Vector2.one, new Color(0.1f, 0.3f, 0.15f)); // Dark green table
+        // Load Water Margin ink wash background image
+        GameObject bgObj = new GameObject("Background");
+        bgObj.transform.SetParent(canvasObj.transform, false);
+        RectTransform bgRect = bgObj.AddComponent<RectTransform>();
+        bgRect.anchorMin = Vector2.zero;
+        bgRect.anchorMax = Vector2.one;
+        bgRect.offsetMin = Vector2.zero;
+        bgRect.offsetMax = Vector2.zero;
+        Image bgImage = bgObj.AddComponent<Image>();
+        bgImage.raycastTarget = false;  // Don't block clicks on cards
+
+        Texture2D bgTex = Resources.Load<Texture2D>("Sprites/background");
+        if (bgTex != null)
+        {
+            bgImage.sprite = Sprite.Create(bgTex,
+                new Rect(0, 0, bgTex.width, bgTex.height),
+                new Vector2(0.5f, 0.5f));
+            bgImage.type = Image.Type.Simple;
+            bgImage.preserveAspect = false;  // Stretch to fill screen
+        }
+        else
+        {
+            // Fallback to solid color if image not found
+            bgImage.color = new Color(0.1f, 0.08f, 0.06f);
+            Debug.LogWarning("Background image not found: Sprites/background");
+        }
 
         // ==================== Player Hand Area (Bottom) ====================
 
@@ -81,122 +105,145 @@ public class GameSetup : MonoBehaviour
         handRect.anchorMin = new Vector2(0.5f, 0);
         handRect.anchorMax = new Vector2(0.5f, 0);
         handRect.pivot = new Vector2(0.5f, 0);
-        handRect.anchoredPosition = new Vector2(0, 10);
-        handRect.sizeDelta = new Vector2(1600, 200);
+        handRect.anchoredPosition = new Vector2(0, 15);
+        handRect.sizeDelta = new Vector2(1600, 180);
         HandView handView = handArea.AddComponent<HandView>();
 
         // ==================== Player Info Labels ====================
 
-        // Player 0 (Human) - bottom center, above hand area
+        // Player 0 (Human) - bottom center, below hand area
         TextMeshProUGUI playerInfo0 = CreateText(canvasObj.transform, "PlayerInfo_You",
-            "\u4f60\nCards: 17",  // 你
+            "\u4f60",  // 你
             new Vector2(0.5f, 0), new Vector2(0.5f, 0),
-            new Vector2(0, 220), new Vector2(300, 40), 16);
+            new Vector2(0, 200), new Vector2(300, 30), 14);
 
-        // Player 1 (AI Left) - left side
+        // Player 1 (AI Left) - top left corner
         TextMeshProUGUI playerInfo1 = CreateText(canvasObj.transform, "PlayerInfo_Left",
-            "\u6797\u51b2\nCards: 17",  // 林冲
-            new Vector2(0, 0.5f), new Vector2(0, 0.5f),
-            new Vector2(100, 0), new Vector2(200, 60), 16);
+            "\u6797\u51b2 | \u624b\u724c: 17",  // 林冲 | 手牌: 17
+            new Vector2(0, 1), new Vector2(0, 1),
+            new Vector2(120, -30), new Vector2(220, 30), 16);
 
-        // Player 2 (AI Right) - right side
+        // Player 2 (AI Right) - top right corner
         TextMeshProUGUI playerInfo2 = CreateText(canvasObj.transform, "PlayerInfo_Right",
-            "\u9c81\u667a\u6df1\nCards: 17",  // 鲁智深
-            new Vector2(1, 0.5f), new Vector2(1, 0.5f),
-            new Vector2(-100, 0), new Vector2(200, 60), 16);
+            "\u9c81\u667a\u6df1 | \u624b\u724c: 17",  // 鲁智深 | 手牌: 17
+            new Vector2(1, 1), new Vector2(1, 1),
+            new Vector2(-130, -30), new Vector2(240, 30), 16);
 
         TextMeshProUGUI[] playerInfoTexts = { playerInfo0, playerInfo1, playerInfo2 };
 
-        // ==================== Played Cards Areas (above each player) ====================
+        // ==================== Played Cards Areas (inverted triangle layout) ====================
 
-        // Player 0 (Human) played cards - above hand area
+        // Player 0 (Human) played cards - center, below AI played areas
         GameObject playedArea0 = new GameObject("PlayedCards_You");
         playedArea0.transform.SetParent(canvasObj.transform, false);
         RectTransform played0Rect = playedArea0.AddComponent<RectTransform>();
-        played0Rect.anchorMin = new Vector2(0.5f, 0.35f);
-        played0Rect.anchorMax = new Vector2(0.5f, 0.35f);
+        played0Rect.anchorMin = new Vector2(0.5f, 0.38f);
+        played0Rect.anchorMax = new Vector2(0.5f, 0.38f);
         played0Rect.pivot = new Vector2(0.5f, 0.5f);
         played0Rect.anchoredPosition = Vector2.zero;
         played0Rect.sizeDelta = new Vector2(900, 160);
 
-        // Player 1 (AI Left) played cards - center-left area
+        // Player 1 (AI Left) played cards - center-left, below Lin Chong info
         GameObject playedArea1 = new GameObject("PlayedCards_Left");
         playedArea1.transform.SetParent(canvasObj.transform, false);
         RectTransform played1Rect = playedArea1.AddComponent<RectTransform>();
-        played1Rect.anchorMin = new Vector2(0.25f, 0.55f);
-        played1Rect.anchorMax = new Vector2(0.25f, 0.55f);
+        played1Rect.anchorMin = new Vector2(0.3f, 0.65f);
+        played1Rect.anchorMax = new Vector2(0.3f, 0.65f);
         played1Rect.pivot = new Vector2(0.5f, 0.5f);
         played1Rect.anchoredPosition = Vector2.zero;
-        played1Rect.sizeDelta = new Vector2(600, 160);
+        played1Rect.sizeDelta = new Vector2(500, 150);
 
-        // Player 2 (AI Right) played cards - center-right area
+        // Player 2 (AI Right) played cards - center-right, below Lu Zhishen info
         GameObject playedArea2 = new GameObject("PlayedCards_Right");
         playedArea2.transform.SetParent(canvasObj.transform, false);
         RectTransform played2Rect = playedArea2.AddComponent<RectTransform>();
-        played2Rect.anchorMin = new Vector2(0.75f, 0.55f);
-        played2Rect.anchorMax = new Vector2(0.75f, 0.55f);
+        played2Rect.anchorMin = new Vector2(0.7f, 0.65f);
+        played2Rect.anchorMax = new Vector2(0.7f, 0.65f);
         played2Rect.pivot = new Vector2(0.5f, 0.5f);
         played2Rect.anchoredPosition = Vector2.zero;
-        played2Rect.sizeDelta = new Vector2(600, 160);
+        played2Rect.sizeDelta = new Vector2(500, 150);
 
         Transform[] playedAreas = { playedArea0.transform, playedArea1.transform, playedArea2.transform };
 
         // ==================== Center Area ====================
 
-        // Message text (center top)
+        // Message text (top center)
         TextMeshProUGUI messageText = CreateText(canvasObj.transform, "MessageText",
             "\u6b22\u8fce\u6765\u5230\u6c34\u6d52\u4f20\u6597\u5730\u4e3b\uff01",  // 欢迎来到水浒传斗地主！
-            new Vector2(0.5f, 0.75f), new Vector2(0.5f, 0.75f),
-            Vector2.zero, new Vector2(600, 50), 24);
+            new Vector2(0.5f, 0.95f), new Vector2(0.5f, 0.95f),
+            Vector2.zero, new Vector2(600, 40), 20);
 
-        // Last played label text (kept for "自由出牌" / "不出" messages)
+        // Combo type label (center, between played areas)
         TextMeshProUGUI lastPlayedText = CreateText(canvasObj.transform, "LastPlayedText",
             "",
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-            new Vector2(0, 60), new Vector2(500, 40), 18);
+            new Vector2(0.5f, 0.52f), new Vector2(0.5f, 0.52f),
+            Vector2.zero, new Vector2(300, 30), 16);
 
         // ==================== Bid Panel ====================
 
         GameObject bidPanel = new GameObject("BidPanel");
         bidPanel.transform.SetParent(canvasObj.transform, false);
         RectTransform bidPanelRect = bidPanel.AddComponent<RectTransform>();
-        bidPanelRect.anchorMin = new Vector2(0.5f, 0.3f);
-        bidPanelRect.anchorMax = new Vector2(0.5f, 0.3f);
-        bidPanelRect.anchoredPosition = Vector2.zero;
-        bidPanelRect.sizeDelta = new Vector2(700, 60);
+        bidPanelRect.anchorMin = new Vector2(0.5f, 0);
+        bidPanelRect.anchorMax = new Vector2(0.5f, 0);
+        bidPanelRect.anchoredPosition = new Vector2(0, 240);
+        bidPanelRect.sizeDelta = new Vector2(700, 50);
 
         Button bid1Button = CreateButton(bidPanel.transform, "Bid1Button",
-            "1\u5206", new Vector2(-240, 0), new Vector2(140, 50));   // 1分
+            "1\u5206", new Vector2(-240, 0), new Vector2(140, 45));   // 1分
         Button bid2Button = CreateButton(bidPanel.transform, "Bid2Button",
-            "2\u5206", new Vector2(-80, 0), new Vector2(140, 50));   // 2分
+            "2\u5206", new Vector2(-80, 0), new Vector2(140, 45));   // 2分
         Button bid3Button = CreateButton(bidPanel.transform, "Bid3Button",
-            "3\u5206", new Vector2(80, 0), new Vector2(140, 50));    // 3分
+            "3\u5206", new Vector2(80, 0), new Vector2(140, 45));    // 3分
         Button noBidButton = CreateButton(bidPanel.transform, "NoBidButton",
-            "\u4e0d\u53eb", new Vector2(240, 0), new Vector2(140, 50));  // 不叫
+            "\u4e0d\u53eb", new Vector2(240, 0), new Vector2(140, 45));  // 不叫
 
         // ==================== Play Panel ====================
 
         GameObject playPanel = new GameObject("PlayPanel");
         playPanel.transform.SetParent(canvasObj.transform, false);
         RectTransform playPanelRect = playPanel.AddComponent<RectTransform>();
-        playPanelRect.anchorMin = new Vector2(0.5f, 0.3f);
-        playPanelRect.anchorMax = new Vector2(0.5f, 0.3f);
-        playPanelRect.anchoredPosition = Vector2.zero;
-        playPanelRect.sizeDelta = new Vector2(400, 60);
+        playPanelRect.anchorMin = new Vector2(0.5f, 0);
+        playPanelRect.anchorMax = new Vector2(0.5f, 0);
+        playPanelRect.anchoredPosition = new Vector2(0, 240);
+        playPanelRect.sizeDelta = new Vector2(400, 50);
 
         Button playButton = CreateButton(playPanel.transform, "PlayButton",
-            "\u51fa\u724c", new Vector2(-110, 0), new Vector2(180, 50));  // 出牌
+            "\u51fa\u724c", new Vector2(-110, 0), new Vector2(160, 45));  // 出牌
         Button passButton = CreateButton(playPanel.transform, "PassButton",
-            "\u4e0d\u51fa", new Vector2(110, 0), new Vector2(180, 50));  // 不出
+            "\u4e0d\u51fa", new Vector2(110, 0), new Vector2(160, 45));  // 不出
 
         // ==================== Restart Button ====================
 
         Button restartButton = CreateButton(canvasObj.transform, "RestartButton",
-            "\u518d\u6765\u4e00\u5c40", Vector2.zero, new Vector2(200, 60));  // 再来一局
+            "\u518d\u6765\u4e00\u5c40", Vector2.zero, new Vector2(200, 50));  // 再来一局
         RectTransform restartRect = restartButton.GetComponent<RectTransform>();
-        restartRect.anchorMin = new Vector2(0.5f, 0.2f);
-        restartRect.anchorMax = new Vector2(0.5f, 0.2f);
+        restartRect.anchorMin = new Vector2(0.5f, 0.5f);
+        restartRect.anchorMax = new Vector2(0.5f, 0.5f);
         restartRect.anchoredPosition = Vector2.zero;
+
+        // ==================== Side Panels ====================
+
+        // Skill panel (right side) - placeholder frame
+        GameObject skillPanel = new GameObject("SkillPanel");
+        skillPanel.transform.SetParent(canvasObj.transform, false);
+        RectTransform skillRect = skillPanel.AddComponent<RectTransform>();
+        skillRect.anchorMin = new Vector2(1, 0);
+        skillRect.anchorMax = new Vector2(1, 0);
+        skillRect.pivot = new Vector2(1, 0);
+        skillRect.anchoredPosition = new Vector2(-15, 15);
+        skillRect.sizeDelta = new Vector2(150, 200);
+        Image skillBg = skillPanel.AddComponent<Image>();
+        skillBg.color = new Color(0.1f, 0.08f, 0.06f, 0.8f);
+
+        Outline skillOutline = skillPanel.AddComponent<Outline>();
+        skillOutline.effectColor = new Color(0.6f, 0.5f, 0.3f);
+        skillOutline.effectDistance = new Vector2(2, 2);
+
+        // Skill panel title
+        CreateText(skillPanel.transform, "SkillTitle", "\u6280\u80fd",  // 技能
+            new Vector2(0.5f, 1), new Vector2(0.5f, 1),
+            new Vector2(0, -18), new Vector2(130, 25), 14);
 
         // ==================== Pause Menu ====================
 

@@ -590,9 +590,17 @@ public class GameUIManager : MonoBehaviour
         for (int i = 0; i < 3; i++)
         {
             Player p = GameManager.Instance.Players[i];
-            string role = p.IsLandlord ? " [\u5730\u4e3b]" : "";  // [地主]
-            string score = scoreManager != null ? $" | \u5206\u6570: {scoreManager.TotalScores[i]}" : "";  // 分数
-            playerInfoTexts[i].text = $"{p.Name}{role}\n\u624b\u724c: {p.Hand.Count}{score}";  // 手牌
+            string role = p.IsLandlord ? "[\u5730\u4e3b]" : "";  // [地主]
+            if (i == 0)
+            {
+                // Human player: compact bottom label
+                playerInfoTexts[i].text = $"{p.Name} {role} | \u624b\u724c: {p.Hand.Count}";
+            }
+            else
+            {
+                // AI players: single line at top
+                playerInfoTexts[i].text = $"{p.Name} {role} | \u624b\u724c: {p.Hand.Count}";
+            }
         }
     }
 

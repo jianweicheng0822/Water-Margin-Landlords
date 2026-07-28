@@ -13,6 +13,13 @@ We are building a Water Margin (水浒传) themed Dou Di Zhu (Fight the Landlord
 - Black Joker: fierce tiger with crescent moon, silver/black color scheme
 - Overall color palette: dark tones, gold accents, warm earth colors
 
+### UI Layout Reference
+- A concept art image is saved at `Assets/Resources/概念图.png`. All UI layout discussions and implementations should reference this concept for guidance. It does not need to be replicated exactly, but it provides a clear vision for the game's layout:
+  - **Left/Right AI players**: circular avatar + name + card count, compact and close together
+  - **Center table area**: played cards displayed in the middle for all players
+  - **Bottom area**: player's hand cards spread out, action buttons above the hand
+  - **Top area**: game info, messages
+
 ### Gameplay Inspiration
 - **Core gameplay**: Dou Di Zhu (Fight the Landlord) card mechanics - bidding, combos, landlord vs farmers
 - **Style inspiration**: Legends of the Three Kingdoms (三国杀) visual and mechanical style, adapted to Water Margin setting
