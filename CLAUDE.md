@@ -13,17 +13,9 @@ We are building a Water Margin (水浒传) themed Dou Di Zhu (Fight the Landlord
 - Black Joker: fierce tiger with crescent moon, silver/black color scheme
 - Overall color palette: dark tones, gold accents, warm earth colors
 
-### Custom Suit System (Future)
-Traditional suits (♠♥♦♣) will be replaced with thematic Water Margin suits that tie into hero skills:
-- **Blade (刀)** ⚔ - Attack-oriented, enhances offensive skills
-- **Wine (酒)** 🍶 - Burst/power-up, enables multipliers
-- **Banner (旗)** 🏴 - Support/team effects, farmer cooperation
-- **Coin (铜钱)** 💰 - Resource/draw, card manipulation
-
 ### Gameplay Inspiration
 - **Core gameplay**: Dou Di Zhu (Fight the Landlord) card mechanics - bidding, combos, landlord vs farmers
-- **Hero system (future)**: Inspired by Legends of the Three Kingdoms (三国杀) - each Water Margin hero (108 heroes of Liangshan) has unique active/passive skills that interact with the suit system
-- **Progression**: Start with classic Dou Di Zhu, then layer on hero skills and suit-based abilities
+- **Style inspiration**: Legends of the Three Kingdoms (三国杀) visual and mechanical style, adapted to Water Margin setting
 
 ## Project
 Water Margin Landlords - A 2D Dou Di Zhu (Fight the Landlord) card game built with Unity + C#.
@@ -66,9 +58,6 @@ Phase 1 - Classic single-player Dou Di Zhu with Water Margin visual style (playa
 ### Phase Roadmap
 1. **Phase 1** - Classic Dou Di Zhu with Water Margin card artwork and themed UI (current)
 2. **Phase 2** - Main menu, polished game background, styled bidding/play UI
-3. **Phase 3** - Custom suit system (Blade/Wine/Banner/Coin)
-4. **Phase 4** - Water Margin hero system with unique skills
-5. **Phase 5** - Multiplayer and Steam integration
 
 ## Author
 jianweisde
