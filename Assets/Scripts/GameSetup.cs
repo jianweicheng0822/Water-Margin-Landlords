@@ -128,7 +128,7 @@ public class GameSetup : MonoBehaviour
         gradientRect.anchorMax = new Vector2(0.5f, 0.65f);
         gradientRect.pivot = new Vector2(0.5f, 0.5f);
         gradientRect.anchoredPosition = Vector2.zero;
-        gradientRect.sizeDelta = new Vector2(900, 450);
+        gradientRect.sizeDelta = new Vector2(1050, 530);
         Image gradientImg = gradientObj.AddComponent<Image>();
         gradientImg.raycastTarget = false;
         gradientImg.sprite = CreateRadialGradientSprite(256, 128, 0.35f);
@@ -143,7 +143,7 @@ public class GameSetup : MonoBehaviour
         logoRect.anchorMax = new Vector2(0.5f, 0.65f);
         logoRect.pivot = new Vector2(0.5f, 0.5f);
         logoRect.anchoredPosition = Vector2.zero;
-        logoRect.sizeDelta = new Vector2(600, 270);
+        logoRect.sizeDelta = new Vector2(750, 340);
         Image logoImg = logoObj.AddComponent<Image>();
         logoImg.raycastTarget = false;
 
