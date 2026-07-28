@@ -104,38 +104,47 @@ public class GameSetup : MonoBehaviour
             Debug.LogWarning("Menu background image not found: Sprites/menu_background");
         }
 
-        // Semi-transparent dark overlay in center for readability
-        GameObject overlay = new GameObject("CenterOverlay");
-        overlay.transform.SetParent(menuPanel.transform, false);
-        RectTransform overlayRect = overlay.AddComponent<RectTransform>();
-        overlayRect.anchorMin = new Vector2(0.3f, 0.2f);
-        overlayRect.anchorMax = new Vector2(0.7f, 0.8f);
-        overlayRect.offsetMin = Vector2.zero;
-        overlayRect.offsetMax = Vector2.zero;
-        Image overlayImg = overlay.AddComponent<Image>();
-        overlayImg.color = new Color(0, 0, 0, 0.5f);
-        overlayImg.raycastTarget = false;
+        // Game logo image (calligraphy 水浒传 / 斗地主)
+        GameObject logoObj = new GameObject("MenuLogo");
+        logoObj.transform.SetParent(menuPanel.transform, false);
+        RectTransform logoRect = logoObj.AddComponent<RectTransform>();
+        logoRect.anchorMin = new Vector2(0.5f, 0.65f);
+        logoRect.anchorMax = new Vector2(0.5f, 0.65f);
+        logoRect.pivot = new Vector2(0.5f, 0.5f);
+        logoRect.anchoredPosition = Vector2.zero;
+        logoRect.sizeDelta = new Vector2(600, 270);
+        Image logoImg = logoObj.AddComponent<Image>();
+        logoImg.raycastTarget = false;
 
-        // Game title - large gold text
-        TextMeshProUGUI titleText = CreateText(menuPanel.transform, "TitleText",
-            "\u6c34\u6d52\u4f20\u6597\u5730\u4e3b",  // 水浒传斗地主
-            new Vector2(0.5f, 0.7f), new Vector2(0.5f, 0.7f),
-            Vector2.zero, new Vector2(800, 80), 56);
-        titleText.color = new Color(0.95f, 0.85f, 0.55f); // Gold
-        titleText.fontStyle = FontStyles.Bold;
+        Texture2D logoTex = Resources.Load<Texture2D>("Sprites/menu_logo");
+        if (logoTex != null)
+        {
+            logoImg.sprite = Sprite.Create(logoTex,
+                new Rect(0, 0, logoTex.width, logoTex.height),
+                new Vector2(0.5f, 0.5f));
+            logoImg.type = Image.Type.Simple;
+            logoImg.preserveAspect = true;
+        }
+        else
+        {
+            Debug.LogWarning("Menu logo not found: Sprites/menu_logo");
+        }
 
-        // Subtitle - smaller white text
-        CreateText(menuPanel.transform, "SubtitleText",
+        // Subtitle below logo - can be localized independently
+        TextMeshProUGUI subtitleText = CreateText(menuPanel.transform, "SubtitleText",
             "Water Margin Landlords",
-            new Vector2(0.5f, 0.62f), new Vector2(0.5f, 0.62f),
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
             Vector2.zero, new Vector2(600, 40), 22);
+        subtitleText.color = new Color(0.85f, 0.75f, 0.5f);
+        subtitleText.outlineWidth = 0.25f;
+        subtitleText.outlineColor = new Color32(20, 15, 10, 255);
 
         // Start Game button
         Button startButton = CreateButton(menuPanel.transform, "StartButton",
             "\u5f00\u59cb\u6e38\u620f", Vector2.zero, new Vector2(240, 55));  // 开始游戏
         RectTransform startRect = startButton.GetComponent<RectTransform>();
-        startRect.anchorMin = new Vector2(0.5f, 0.42f);
-        startRect.anchorMax = new Vector2(0.5f, 0.42f);
+        startRect.anchorMin = new Vector2(0.5f, 0.4f);
+        startRect.anchorMax = new Vector2(0.5f, 0.4f);
         startRect.anchoredPosition = Vector2.zero;
 
         startButton.onClick.AddListener(() =>
@@ -148,8 +157,8 @@ public class GameSetup : MonoBehaviour
         Button quitButton = CreateButton(menuPanel.transform, "QuitButton",
             "\u9000\u51fa\u6e38\u620f", Vector2.zero, new Vector2(240, 55));  // 退出游戏
         RectTransform quitRect = quitButton.GetComponent<RectTransform>();
-        quitRect.anchorMin = new Vector2(0.5f, 0.33f);
-        quitRect.anchorMax = new Vector2(0.5f, 0.33f);
+        quitRect.anchorMin = new Vector2(0.5f, 0.32f);
+        quitRect.anchorMax = new Vector2(0.5f, 0.32f);
         quitRect.anchoredPosition = Vector2.zero;
 
         quitButton.onClick.AddListener(() =>
