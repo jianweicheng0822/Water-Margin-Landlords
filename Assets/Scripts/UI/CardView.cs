@@ -48,6 +48,78 @@ public class CardView : MonoBehaviour
     }
 
     /// <summary>
+    /// Creates a display-only card (no click interaction) for showing played cards.
+    /// </summary>
+    public static GameObject CreateDisplayCard(Card card, Transform parent, float width, float height)
+    {
+        GameObject cardObj = new GameObject($"Played_{card}");
+        cardObj.transform.SetParent(parent, false);
+
+        RectTransform rect = cardObj.AddComponent<RectTransform>();
+        rect.sizeDelta = new Vector2(width, height);
+
+        Image img = cardObj.AddComponent<Image>();
+        img.type = Image.Type.Simple;
+        img.preserveAspect = true;
+
+        Sprite sprite = LoadSpriteForCard(card);
+        if (sprite != null)
+            img.sprite = sprite;
+
+        return cardObj;
+    }
+
+    /// <summary>
+    /// Static method to load a sprite for any card, using the shared cache.
+    /// </summary>
+    public static Sprite LoadSpriteForCard(Card card)
+    {
+        string spriteName = GetSpriteNameForCard(card);
+
+        if (spriteCache.TryGetValue(spriteName, out Sprite cached))
+            return cached;
+
+        Texture2D tex = Resources.Load<Texture2D>($"Sprites/{spriteName}");
+        if (tex == null)
+        {
+            Debug.LogWarning($"Card sprite not found: Sprites/{spriteName}");
+            return null;
+        }
+
+        Sprite sprite = Sprite.Create(tex,
+            new Rect(0, 0, tex.width, tex.height),
+            new Vector2(0.5f, 0.5f));
+        spriteCache[spriteName] = sprite;
+        return sprite;
+    }
+
+    /// <summary>
+    /// Returns the sprite filename for a given card (static version).
+    /// </summary>
+    private static string GetSpriteNameForCard(Card card)
+    {
+        switch (card.Rank)
+        {
+            case Rank.Three: return "card_3";
+            case Rank.Four: return "card_4";
+            case Rank.Five: return "card_5";
+            case Rank.Six: return "card_6";
+            case Rank.Seven: return "card_7";
+            case Rank.Eight: return "card_8";
+            case Rank.Nine: return "card_9";
+            case Rank.Ten: return "card_10";
+            case Rank.Jack: return "card_J";
+            case Rank.Queen: return "card_Q";
+            case Rank.King: return "card_K";
+            case Rank.Ace: return "card_A";
+            case Rank.Two: return "card_2";
+            case Rank.RedJoker: return "card_joker_red";
+            case Rank.BlackJoker: return "card_joker_black";
+            default: return "card_back";
+        }
+    }
+
+    /// <summary>
     /// Builds the card's UI using the artwork sprite.
     /// </summary>
     private void SetupUI()
@@ -73,58 +145,11 @@ public class CardView : MonoBehaviour
     }
 
     /// <summary>
-    /// Loads the appropriate sprite for this card from Resources/Sprites/.
-    /// Uses a static cache so each texture is only loaded once.
+    /// Loads the sprite for this card instance using the shared static loader.
     /// </summary>
     private Sprite LoadCardSprite()
     {
-        string spriteName = GetSpriteName();
-
-        // Return cached sprite if already loaded
-        if (spriteCache.TryGetValue(spriteName, out Sprite cached))
-            return cached;
-
-        // Load texture from Resources folder (path without extension)
-        Texture2D tex = Resources.Load<Texture2D>($"Sprites/{spriteName}");
-        if (tex == null)
-        {
-            Debug.LogWarning($"Card sprite not found: Sprites/{spriteName}");
-            return null;
-        }
-
-        // Create sprite from texture and cache it
-        Sprite sprite = Sprite.Create(tex,
-            new Rect(0, 0, tex.width, tex.height),
-            new Vector2(0.5f, 0.5f));
-        spriteCache[spriteName] = sprite;
-        return sprite;
-    }
-
-    /// <summary>
-    /// Returns the sprite filename (without extension) based on card rank.
-    /// Jokers use separate red/black sprites, all other ranks share one sprite per rank.
-    /// </summary>
-    private string GetSpriteName()
-    {
-        switch (card.Rank)
-        {
-            case Rank.Three: return "card_3";
-            case Rank.Four: return "card_4";
-            case Rank.Five: return "card_5";
-            case Rank.Six: return "card_6";
-            case Rank.Seven: return "card_7";
-            case Rank.Eight: return "card_8";
-            case Rank.Nine: return "card_9";
-            case Rank.Ten: return "card_10";
-            case Rank.Jack: return "card_J";
-            case Rank.Queen: return "card_Q";
-            case Rank.King: return "card_K";
-            case Rank.Ace: return "card_A";
-            case Rank.Two: return "card_2";
-            case Rank.RedJoker: return "card_joker_red";
-            case Rank.BlackJoker: return "card_joker_black";
-            default: return "card_back";
-        }
+        return LoadSpriteForCard(card);
     }
 
     /// <summary>

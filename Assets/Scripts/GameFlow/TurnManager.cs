@@ -206,6 +206,14 @@ public class TurnManager : MonoBehaviour
     }
 
     /// <summary>
+    /// Returns the index of the player who played the last combo.
+    /// </summary>
+    public int GetLastPlayedBy()
+    {
+        return lastPlayedBy;
+    }
+
+    /// <summary>
     /// Returns true if the playing phase is active.
     /// </summary>
     public bool IsPlaying()

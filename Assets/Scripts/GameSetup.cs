@@ -65,8 +65,8 @@ public class GameSetup : MonoBehaviour
         handRect.anchorMin = new Vector2(0.5f, 0);
         handRect.anchorMax = new Vector2(0.5f, 0);
         handRect.pivot = new Vector2(0.5f, 0);
-        handRect.anchoredPosition = new Vector2(0, 30);
-        handRect.sizeDelta = new Vector2(1200, 150);
+        handRect.anchoredPosition = new Vector2(0, 20);
+        handRect.sizeDelta = new Vector2(1400, 190);
         HandView handView = handArea.AddComponent<HandView>();
 
         // ==================== Player Info Labels ====================
@@ -91,6 +91,40 @@ public class GameSetup : MonoBehaviour
 
         TextMeshProUGUI[] playerInfoTexts = { playerInfo0, playerInfo1, playerInfo2 };
 
+        // ==================== Played Cards Areas (above each player) ====================
+
+        // Player 0 (Human) played cards - above hand area
+        GameObject playedArea0 = new GameObject("PlayedCards_You");
+        playedArea0.transform.SetParent(canvasObj.transform, false);
+        RectTransform played0Rect = playedArea0.AddComponent<RectTransform>();
+        played0Rect.anchorMin = new Vector2(0.5f, 0);
+        played0Rect.anchorMax = new Vector2(0.5f, 0);
+        played0Rect.pivot = new Vector2(0.5f, 0.5f);
+        played0Rect.anchoredPosition = new Vector2(0, 330);
+        played0Rect.sizeDelta = new Vector2(800, 120);
+
+        // Player 1 (AI Left) played cards - above left player info
+        GameObject playedArea1 = new GameObject("PlayedCards_Left");
+        playedArea1.transform.SetParent(canvasObj.transform, false);
+        RectTransform played1Rect = playedArea1.AddComponent<RectTransform>();
+        played1Rect.anchorMin = new Vector2(0, 0.5f);
+        played1Rect.anchorMax = new Vector2(0, 0.5f);
+        played1Rect.pivot = new Vector2(0.5f, 0.5f);
+        played1Rect.anchoredPosition = new Vector2(300, 100);
+        played1Rect.sizeDelta = new Vector2(500, 120);
+
+        // Player 2 (AI Right) played cards - above right player info
+        GameObject playedArea2 = new GameObject("PlayedCards_Right");
+        playedArea2.transform.SetParent(canvasObj.transform, false);
+        RectTransform played2Rect = playedArea2.AddComponent<RectTransform>();
+        played2Rect.anchorMin = new Vector2(1, 0.5f);
+        played2Rect.anchorMax = new Vector2(1, 0.5f);
+        played2Rect.pivot = new Vector2(0.5f, 0.5f);
+        played2Rect.anchoredPosition = new Vector2(-300, 100);
+        played2Rect.sizeDelta = new Vector2(500, 120);
+
+        Transform[] playedAreas = { playedArea0.transform, playedArea1.transform, playedArea2.transform };
+
         // ==================== Center Area ====================
 
         // Message text (center top)
@@ -99,11 +133,11 @@ public class GameSetup : MonoBehaviour
             new Vector2(0.5f, 0.75f), new Vector2(0.5f, 0.75f),
             Vector2.zero, new Vector2(600, 50), 24);
 
-        // Last played cards display (center)
+        // Last played label text (kept for "自由出牌" / "不出" messages)
         TextMeshProUGUI lastPlayedText = CreateText(canvasObj.transform, "LastPlayedText",
             "",
             new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-            Vector2.zero, new Vector2(500, 80), 20);
+            new Vector2(0, 60), new Vector2(500, 40), 18);
 
         // ==================== Bid Panel ====================
 
@@ -191,7 +225,8 @@ public class GameSetup : MonoBehaviour
             bid1Button, bid2Button, bid3Button, noBidButton,
             bidPanel, playPanel,
             messageText, lastPlayedText,
-            playerInfoTexts, restartButton
+            playerInfoTexts, restartButton,
+            playedAreas
         );
 
         // Wire pause panel

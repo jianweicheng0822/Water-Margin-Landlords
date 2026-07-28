@@ -11,8 +11,8 @@ public class HandView : MonoBehaviour
     // All card views currently displayed in the hand
     private List<CardView> cardViews = new List<CardView>();
 
-    // Spacing between overlapping cards (smaller = more overlap, exposing only the rank corner)
-    private static readonly float CARD_SPACING = 35f;
+    // Spacing between overlapping cards (each card is 120px wide, 55px shows enough of each card)
+    private static readonly float CARD_SPACING = 55f;
 
     // Reference to the UI manager for notifying selection changes
     private GameUIManager uiManager;

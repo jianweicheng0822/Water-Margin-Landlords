@@ -31,6 +31,14 @@ public class GameUIManager : MonoBehaviour
     private TextMeshProUGUI[] playerInfoTexts = new TextMeshProUGUI[3];
     private Button restartButton;
 
+    // Played cards display areas (one per player, positioned above each player)
+    private Transform[] playedCardAreas;
+
+    // Display card size for played cards (smaller than hand cards)
+    private static readonly float PLAYED_CARD_WIDTH = 80f;
+    private static readonly float PLAYED_CARD_HEIGHT = 120f;
+    private static readonly float PLAYED_CARD_SPACING = 30f;
+
     // Pause menu state
     private GameObject pausePanel;
     private bool isPaused;
@@ -58,7 +66,8 @@ public class GameUIManager : MonoBehaviour
         Button bid1Btn, Button bid2Btn, Button bid3Btn, Button noBidBtn,
         GameObject bidPnl, GameObject playPnl,
         TextMeshProUGUI msgText, TextMeshProUGUI lastPlayed,
-        TextMeshProUGUI[] playerInfos, Button restartBtn)
+        TextMeshProUGUI[] playerInfos, Button restartBtn,
+        Transform[] playedAreas)
     {
         playButton = playBtn;
         passButton = passBtn;
@@ -72,6 +81,7 @@ public class GameUIManager : MonoBehaviour
         lastPlayedText = lastPlayed;
         playerInfoTexts = playerInfos;
         restartButton = restartBtn;
+        playedCardAreas = playedAreas;
 
         // Wire up button clicks
         playButton.onClick.AddListener(OnPlayClicked);
@@ -423,8 +433,9 @@ public class GameUIManager : MonoBehaviour
         // Hide restart button
         restartButton.gameObject.SetActive(false);
 
-        // Clear hand display and last played text
+        // Clear hand display, played cards, and last played text
         handView.ClearHand();
+        ClearAllPlayedAreas();
         lastPlayedText.text = "";
 
         // Start a fresh game
@@ -454,19 +465,59 @@ public class GameUIManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Updates the display showing what was last played on the table.
+    /// Updates the played cards display with card images above the player who played.
     /// </summary>
     private void UpdateLastPlayedDisplay()
     {
+        // Clear all played card areas first
+        ClearAllPlayedAreas();
+
         CardCombo lastCombo = turnManager.GetLastPlayedCombo();
         if (lastCombo != null)
         {
-            string cardsStr = string.Join(" ", lastCombo.Cards.Select(c => FormatCard(c)));
-            lastPlayedText.text = $"\u4e0a\u5bb6\u51fa\u724c: {cardsStr}\n({lastCombo.Type})";  // 上家出牌
+            int playerIndex = turnManager.GetLastPlayedBy();
+            ShowPlayedCards(playerIndex, lastCombo.Cards);
+            lastPlayedText.text = $"({lastCombo.Type})";
         }
         else
         {
             lastPlayedText.text = "\u81ea\u7531\u51fa\u724c";  // 自由出牌
+        }
+    }
+
+    /// <summary>
+    /// Clears all card images from all played card areas.
+    /// </summary>
+    private void ClearAllPlayedAreas()
+    {
+        if (playedCardAreas == null) return;
+        foreach (Transform area in playedCardAreas)
+        {
+            for (int i = area.childCount - 1; i >= 0; i--)
+            {
+                Destroy(area.GetChild(i).gameObject);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Shows card images in the specified player's played area.
+    /// Cards are laid out horizontally, centered in the area.
+    /// </summary>
+    private void ShowPlayedCards(int playerIndex, List<Card> cards)
+    {
+        if (playedCardAreas == null || playerIndex < 0 || playerIndex >= playedCardAreas.Length)
+            return;
+
+        Transform area = playedCardAreas[playerIndex];
+        float totalWidth = (cards.Count - 1) * PLAYED_CARD_SPACING + PLAYED_CARD_WIDTH;
+        float startX = -totalWidth / 2f + PLAYED_CARD_WIDTH / 2f;
+
+        for (int i = 0; i < cards.Count; i++)
+        {
+            GameObject cardObj = CardView.CreateDisplayCard(cards[i], area, PLAYED_CARD_WIDTH, PLAYED_CARD_HEIGHT);
+            RectTransform rect = cardObj.GetComponent<RectTransform>();
+            rect.anchoredPosition = new Vector2(startX + i * PLAYED_CARD_SPACING, 0);
         }
     }
 
