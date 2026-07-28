@@ -34,10 +34,16 @@ public class GameUIManager : MonoBehaviour
     // Played cards display areas (one per player, positioned above each player)
     private Transform[] playedCardAreas;
 
-    // Display card size for played cards (smaller than hand cards)
-    private static readonly float PLAYED_CARD_WIDTH = 80f;
-    private static readonly float PLAYED_CARD_HEIGHT = 120f;
-    private static readonly float PLAYED_CARD_SPACING = 30f;
+    // Display card size for played cards
+    private static readonly float PLAYED_CARD_WIDTH = 100f;
+    private static readonly float PLAYED_CARD_HEIGHT = 150f;
+    private static readonly float PLAYED_CARD_SPACING = 40f;
+
+    // Tracks which players passed (to show "不出" text)
+    private bool[] playerPassed = new bool[3];
+
+    // Cached Chinese font for dynamically created text
+    private TMP_FontAsset cachedChineseFont;
 
     // Pause menu state
     private GameObject pausePanel;
@@ -123,11 +129,12 @@ public class GameUIManager : MonoBehaviour
 
     /// <summary>
     /// Checks for ESC key press each frame to toggle the pause menu.
-    /// Only active during Bidding or Playing phases.
+    /// Uses new Input System's Keyboard class.
     /// </summary>
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Escape))
+        var keyboard = UnityEngine.InputSystem.Keyboard.current;
+        if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
         {
             GamePhase phase = GameManager.Instance.CurrentPhase;
             if (phase == GamePhase.Bidding || phase == GamePhase.Playing)
@@ -319,7 +326,18 @@ public class GameUIManager : MonoBehaviour
             return;
 
         Player currentPlayer = turnManager.GetCurrentPlayer();
+        int prevCardCount = currentPlayer.Hand.Count;
         aiPlayer.HandlePlay(currentPlayer.Index);
+
+        // Check if AI passed (card count unchanged) or played
+        if (currentPlayer.Hand.Count == prevCardCount)
+        {
+            playerPassed[currentPlayer.Index] = true;
+        }
+        else
+        {
+            playerPassed = new bool[3];  // Reset pass states when cards are played
+        }
 
         UpdatePlayerInfo();
         UpdateLastPlayedDisplay();
@@ -344,6 +362,7 @@ public class GameUIManager : MonoBehaviour
         bool success = turnManager.PlayCards(selected);
         if (success)
         {
+            playerPassed = new bool[3];  // Reset pass states when cards are played
             handView.RemoveCards(selected);
             playPanel.SetActive(false);
             UpdateLastPlayedDisplay();
@@ -370,6 +389,7 @@ public class GameUIManager : MonoBehaviour
         bool success = turnManager.Pass();
         if (success)
         {
+            playerPassed[0] = true;
             handView.DeselectAll();
             playPanel.SetActive(false);
             UpdateLastPlayedDisplay();
@@ -466,6 +486,7 @@ public class GameUIManager : MonoBehaviour
 
     /// <summary>
     /// Updates the played cards display with card images above the player who played.
+    /// Shows "不出" text for players who passed.
     /// </summary>
     private void UpdateLastPlayedDisplay()
     {
@@ -477,10 +498,19 @@ public class GameUIManager : MonoBehaviour
         {
             int playerIndex = turnManager.GetLastPlayedBy();
             ShowPlayedCards(playerIndex, lastCombo.Cards);
-            lastPlayedText.text = $"({lastCombo.Type})";
+            lastPlayedText.text = $"({GetComboTypeName(lastCombo.Type)})";
+
+            // Show "不出" for players who passed
+            for (int i = 0; i < 3; i++)
+            {
+                if (playerPassed[i])
+                    ShowPassText(i);
+            }
         }
         else
         {
+            // Free play - reset all pass states
+            playerPassed = new bool[3];
             lastPlayedText.text = "\u81ea\u7531\u51fa\u724c";  // 自由出牌
         }
     }
@@ -519,6 +549,37 @@ public class GameUIManager : MonoBehaviour
             RectTransform rect = cardObj.GetComponent<RectTransform>();
             rect.anchoredPosition = new Vector2(startX + i * PLAYED_CARD_SPACING, 0);
         }
+    }
+
+    /// <summary>
+    /// Shows "不出" text in the specified player's played area.
+    /// </summary>
+    private void ShowPassText(int playerIndex)
+    {
+        if (playedCardAreas == null || playerIndex < 0 || playerIndex >= playedCardAreas.Length)
+            return;
+
+        Transform area = playedCardAreas[playerIndex];
+        GameObject textObj = new GameObject("PassText");
+        textObj.transform.SetParent(area, false);
+        RectTransform rect = textObj.AddComponent<RectTransform>();
+        rect.sizeDelta = new Vector2(200, 50);
+        rect.anchoredPosition = Vector2.zero;
+
+        TextMeshProUGUI tmp = textObj.AddComponent<TextMeshProUGUI>();
+        // Use cached Chinese font
+        if (cachedChineseFont == null)
+        {
+            Font notoFont = Resources.Load<Font>("NotoSansSC-Regular");
+            if (notoFont != null)
+                cachedChineseFont = TMP_FontAsset.CreateFontAsset(notoFont);
+        }
+        if (cachedChineseFont != null)
+            tmp.font = cachedChineseFont;
+        tmp.text = "\u4e0d\u51fa";  // 不出
+        tmp.fontSize = 28;
+        tmp.alignment = TextAlignmentOptions.Center;
+        tmp.color = new Color(1f, 0.9f, 0.6f);  // Gold color
     }
 
     /// <summary>
@@ -587,6 +648,31 @@ public class GameUIManager : MonoBehaviour
         }
 
         return suit + rank;
+    }
+
+    /// <summary>
+    /// Returns the Chinese name for a combo type.
+    /// </summary>
+    private string GetComboTypeName(ComboType type)
+    {
+        switch (type)
+        {
+            case ComboType.Single: return "\u5355\u5f20";              // 单张
+            case ComboType.Pair: return "\u5bf9\u5b50";                // 对子
+            case ComboType.Triple: return "\u4e09\u6761";              // 三条
+            case ComboType.TripleWithSingle: return "\u4e09\u5e26\u4e00";  // 三带一
+            case ComboType.TripleWithPair: return "\u4e09\u5e26\u4e8c";    // 三带二
+            case ComboType.Straight: return "\u987a\u5b50";            // 顺子
+            case ComboType.StraightPair: return "\u8fde\u5bf9";        // 连对
+            case ComboType.Plane: return "\u98de\u673a";               // 飞机
+            case ComboType.PlaneWithSingles: return "\u98de\u673a\u5e26\u7fc5\u8180";  // 飞机带翅膀
+            case ComboType.PlaneWithPairs: return "\u98de\u673a\u5e26\u5bf9";          // 飞机带对
+            case ComboType.FourWithTwo: return "\u56db\u5e26\u4e8c";   // 四带二
+            case ComboType.FourWithTwoPairs: return "\u56db\u5e26\u4e24\u5bf9";  // 四带两对
+            case ComboType.Bomb: return "\u70b8\u5f39";                // 炸弹
+            case ComboType.Rocket: return "\u706b\u7bad";              // 火箭
+            default: return type.ToString();
+        }
     }
 
     /// <summary>

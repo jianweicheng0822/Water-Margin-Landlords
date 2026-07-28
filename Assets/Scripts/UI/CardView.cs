@@ -22,8 +22,8 @@ public class CardView : MonoBehaviour
     // Visual constants
     private static readonly Color NORMAL_TINT = Color.white;
     private static readonly Color SELECTED_TINT = new Color(0.7f, 1f, 0.7f);  // Light green tint
-    private static readonly float CARD_WIDTH = 120f;
-    private static readonly float CARD_HEIGHT = 180f;
+    private static readonly float CARD_WIDTH = 110f;
+    private static readonly float CARD_HEIGHT = 165f;
     private static readonly float SELECTED_OFFSET_Y = 20f;
 
     // Sprite cache: loaded once, shared by all CardView instances

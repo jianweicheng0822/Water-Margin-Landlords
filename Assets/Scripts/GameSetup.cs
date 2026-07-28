@@ -11,6 +11,9 @@ using TMPro;
 /// </summary>
 public class GameSetup : MonoBehaviour
 {
+    // Cached Chinese font asset for all TMP text elements
+    private TMP_FontAsset chineseFont;
+
     private void Start()
     {
         CreateGame();
@@ -21,6 +24,19 @@ public class GameSetup : MonoBehaviour
     /// </summary>
     private void CreateGame()
     {
+        // ==================== Load Chinese Font ====================
+
+        // Create TMP font dynamically from .ttf at runtime (supports full character set)
+        Font notoFont = Resources.Load<Font>("NotoSansSC-Regular");
+        if (notoFont != null)
+        {
+            chineseFont = TMP_FontAsset.CreateFontAsset(notoFont);
+        }
+        else
+        {
+            Debug.LogWarning("NotoSansSC-Regular.ttf not found in Resources. Chinese text will not display.");
+        }
+
         // ==================== Managers ====================
 
         // Create a central manager object with all game flow components
@@ -65,17 +81,17 @@ public class GameSetup : MonoBehaviour
         handRect.anchorMin = new Vector2(0.5f, 0);
         handRect.anchorMax = new Vector2(0.5f, 0);
         handRect.pivot = new Vector2(0.5f, 0);
-        handRect.anchoredPosition = new Vector2(0, 20);
-        handRect.sizeDelta = new Vector2(1400, 190);
+        handRect.anchoredPosition = new Vector2(0, 10);
+        handRect.sizeDelta = new Vector2(1600, 200);
         HandView handView = handArea.AddComponent<HandView>();
 
         // ==================== Player Info Labels ====================
 
-        // Player 0 (Human) - bottom center
+        // Player 0 (Human) - bottom center, above hand area
         TextMeshProUGUI playerInfo0 = CreateText(canvasObj.transform, "PlayerInfo_You",
             "\u4f60\nCards: 17",  // 你
             new Vector2(0.5f, 0), new Vector2(0.5f, 0),
-            new Vector2(0, 185), new Vector2(200, 40), 16);
+            new Vector2(0, 220), new Vector2(300, 40), 16);
 
         // Player 1 (AI Left) - left side
         TextMeshProUGUI playerInfo1 = CreateText(canvasObj.transform, "PlayerInfo_Left",
@@ -97,31 +113,31 @@ public class GameSetup : MonoBehaviour
         GameObject playedArea0 = new GameObject("PlayedCards_You");
         playedArea0.transform.SetParent(canvasObj.transform, false);
         RectTransform played0Rect = playedArea0.AddComponent<RectTransform>();
-        played0Rect.anchorMin = new Vector2(0.5f, 0);
-        played0Rect.anchorMax = new Vector2(0.5f, 0);
+        played0Rect.anchorMin = new Vector2(0.5f, 0.35f);
+        played0Rect.anchorMax = new Vector2(0.5f, 0.35f);
         played0Rect.pivot = new Vector2(0.5f, 0.5f);
-        played0Rect.anchoredPosition = new Vector2(0, 330);
-        played0Rect.sizeDelta = new Vector2(800, 120);
+        played0Rect.anchoredPosition = Vector2.zero;
+        played0Rect.sizeDelta = new Vector2(900, 160);
 
-        // Player 1 (AI Left) played cards - above left player info
+        // Player 1 (AI Left) played cards - center-left area
         GameObject playedArea1 = new GameObject("PlayedCards_Left");
         playedArea1.transform.SetParent(canvasObj.transform, false);
         RectTransform played1Rect = playedArea1.AddComponent<RectTransform>();
-        played1Rect.anchorMin = new Vector2(0, 0.5f);
-        played1Rect.anchorMax = new Vector2(0, 0.5f);
+        played1Rect.anchorMin = new Vector2(0.25f, 0.55f);
+        played1Rect.anchorMax = new Vector2(0.25f, 0.55f);
         played1Rect.pivot = new Vector2(0.5f, 0.5f);
-        played1Rect.anchoredPosition = new Vector2(300, 100);
-        played1Rect.sizeDelta = new Vector2(500, 120);
+        played1Rect.anchoredPosition = Vector2.zero;
+        played1Rect.sizeDelta = new Vector2(600, 160);
 
-        // Player 2 (AI Right) played cards - above right player info
+        // Player 2 (AI Right) played cards - center-right area
         GameObject playedArea2 = new GameObject("PlayedCards_Right");
         playedArea2.transform.SetParent(canvasObj.transform, false);
         RectTransform played2Rect = playedArea2.AddComponent<RectTransform>();
-        played2Rect.anchorMin = new Vector2(1, 0.5f);
-        played2Rect.anchorMax = new Vector2(1, 0.5f);
+        played2Rect.anchorMin = new Vector2(0.75f, 0.55f);
+        played2Rect.anchorMax = new Vector2(0.75f, 0.55f);
         played2Rect.pivot = new Vector2(0.5f, 0.5f);
-        played2Rect.anchoredPosition = new Vector2(-300, 100);
-        played2Rect.sizeDelta = new Vector2(500, 120);
+        played2Rect.anchoredPosition = Vector2.zero;
+        played2Rect.sizeDelta = new Vector2(600, 160);
 
         Transform[] playedAreas = { playedArea0.transform, playedArea1.transform, playedArea2.transform };
 
@@ -272,6 +288,7 @@ public class GameSetup : MonoBehaviour
         rect.sizeDelta = size;
 
         TextMeshProUGUI tmp = obj.AddComponent<TextMeshProUGUI>();
+        if (chineseFont != null) tmp.font = chineseFont;
         tmp.text = text;
         tmp.fontSize = fontSize;
         tmp.alignment = TextAlignmentOptions.Center;
@@ -311,6 +328,7 @@ public class GameSetup : MonoBehaviour
         textRect.offsetMax = Vector2.zero;
 
         TextMeshProUGUI tmp = textObj.AddComponent<TextMeshProUGUI>();
+        if (chineseFont != null) tmp.font = chineseFont;
         tmp.text = label;
         tmp.fontSize = 20;
         tmp.alignment = TextAlignmentOptions.Center;
