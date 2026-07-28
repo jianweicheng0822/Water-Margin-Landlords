@@ -164,8 +164,8 @@ public class GameUIManager : MonoBehaviour
             // Human player's turn to bid
             int highest = bidManager.GetHighestBid();
             SetMessage(highest > 0
-                ? $"Current highest bid: {highest}. Your turn to bid."
-                : "Your turn to bid.");
+                ? $"\u5f53\u524d\u6700\u9ad8\u53eb\u5206\uff1a{highest}\u5206\u3002\u8bf7\u53eb\u5206\u3002"  // 当前最高叫分：X分。请叫分。
+                : "\u8bf7\u53eb\u5206\u3002");  // 请叫分。
             bidPanel.SetActive(true);
             playPanel.SetActive(false);
             UpdateBidButtons();
@@ -249,7 +249,7 @@ public class GameUIManager : MonoBehaviour
     {
         // Find landlord name
         Player landlord = GameManager.Instance.Players.First(p => p.IsLandlord);
-        SetMessage($"{landlord.Name} is the landlord!");
+        SetMessage($"{landlord.Name} \u662f\u5730\u4e3b\uff01");  // X 是地主！
 
         // Refresh human player's hand (may have gotten landlord cards)
         RefreshHand();
@@ -285,7 +285,7 @@ public class GameUIManager : MonoBehaviour
         if (currentPlayer.Index == 0)
         {
             // Human player's turn
-            SetMessage("Your turn. Select cards and play, or pass.");
+            SetMessage("\u8f6e\u5230\u4f60\u51fa\u724c\u3002\u9009\u62e9\u724c\u540e\u70b9\u51fa\u724c\u6216\u4e0d\u51fa\u3002");  // 轮到你出牌。选择牌后点出牌或不出。
             playPanel.SetActive(true);
             UpdatePlayButtons();
         }
@@ -293,7 +293,7 @@ public class GameUIManager : MonoBehaviour
         {
             // AI player's turn
             playPanel.SetActive(false);
-            SetMessage($"{currentPlayer.Name} is thinking...");
+            SetMessage($"{currentPlayer.Name} \u6b63\u5728\u601d\u8003...");  // X 正在思考...
 
             // Small delay so the player can see what's happening
             Invoke(nameof(AIPlayTurn), 0.8f);
@@ -350,7 +350,7 @@ public class GameUIManager : MonoBehaviour
         }
         else
         {
-            SetMessage("Invalid play! Try a different combination.");
+            SetMessage("\u65e0\u6548\u7684\u51fa\u724c\uff01\u8bf7\u91cd\u65b0\u9009\u62e9\u3002");  // 无效的出牌！请重新选择。
             handView.DeselectAll();
         }
     }
@@ -367,7 +367,7 @@ public class GameUIManager : MonoBehaviour
         }
         else
         {
-            SetMessage("You must play - cannot pass on free play!");
+            SetMessage("\u5fc5\u987b\u51fa\u724c\uff01\u81ea\u7531\u51fa\u724c\u4e0d\u80fd\u8df3\u8fc7\u3002");  // 必须出牌！自由出牌不能跳过。
         }
     }
 
@@ -386,15 +386,15 @@ public class GameUIManager : MonoBehaviour
 
             // Build result message with score details
             string winMsg = winner.IsLandlord
-                ? $"Game Over! {winner.Name} (Landlord) wins!"
-                : $"Game Over! Farmers win! ({winner.Name} finished first)";
+                ? $"\u6e38\u620f\u7ed3\u675f\uff01{winner.Name}\uff08\u5730\u4e3b\uff09\u83dc\uff01"   // 游戏结束！X（地主）赢！
+                : $"\u6e38\u620f\u7ed3\u675f\uff01\u519c\u6c11\u83dc\uff01\uff08{winner.Name}\u5148\u51fa\u5b8c\uff09";  // 游戏结束！农民赢！（X先出完）
 
             string scoreMsg = "\n";
             for (int i = 0; i < 3; i++)
             {
                 Player p = GameManager.Instance.Players[i];
                 string change = ScoreManager.FormatScoreChange(scoreManager.LastRoundScores[i]);
-                scoreMsg += $"{p.Name}: {change} (Total: {scoreManager.TotalScores[i]})  ";
+                scoreMsg += $"{p.Name}: {change} (\u603b\u5206: {scoreManager.TotalScores[i]})  ";  // 总分
             }
 
             SetMessage(winMsg + scoreMsg);
@@ -462,11 +462,11 @@ public class GameUIManager : MonoBehaviour
         if (lastCombo != null)
         {
             string cardsStr = string.Join(" ", lastCombo.Cards.Select(c => FormatCard(c)));
-            lastPlayedText.text = $"Last played: {cardsStr}\n({lastCombo.Type})";
+            lastPlayedText.text = $"\u4e0a\u5bb6\u51fa\u724c: {cardsStr}\n({lastCombo.Type})";  // 上家出牌
         }
         else
         {
-            lastPlayedText.text = "Free play";
+            lastPlayedText.text = "\u81ea\u7531\u51fa\u724c";  // 自由出牌
         }
     }
 
@@ -478,9 +478,9 @@ public class GameUIManager : MonoBehaviour
         for (int i = 0; i < 3; i++)
         {
             Player p = GameManager.Instance.Players[i];
-            string role = p.IsLandlord ? " [Landlord]" : "";
-            string score = scoreManager != null ? $" | Score: {scoreManager.TotalScores[i]}" : "";
-            playerInfoTexts[i].text = $"{p.Name}{role}\nCards: {p.Hand.Count}{score}";
+            string role = p.IsLandlord ? " [\u5730\u4e3b]" : "";  // [地主]
+            string score = scoreManager != null ? $" | \u5206\u6570: {scoreManager.TotalScores[i]}" : "";  // 分数
+            playerInfoTexts[i].text = $"{p.Name}{role}\n\u624b\u724c: {p.Hand.Count}{score}";  // 手牌
         }
     }
 

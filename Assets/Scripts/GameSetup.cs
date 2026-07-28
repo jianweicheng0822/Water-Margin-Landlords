@@ -73,19 +73,19 @@ public class GameSetup : MonoBehaviour
 
         // Player 0 (Human) - bottom center
         TextMeshProUGUI playerInfo0 = CreateText(canvasObj.transform, "PlayerInfo_You",
-            "You\nCards: 17",
+            "\u4f60\nCards: 17",  // 你
             new Vector2(0.5f, 0), new Vector2(0.5f, 0),
             new Vector2(0, 185), new Vector2(200, 40), 16);
 
         // Player 1 (AI Left) - left side
         TextMeshProUGUI playerInfo1 = CreateText(canvasObj.transform, "PlayerInfo_Left",
-            "AI_Left\nCards: 17",
+            "\u6797\u51b2\nCards: 17",  // 林冲
             new Vector2(0, 0.5f), new Vector2(0, 0.5f),
             new Vector2(100, 0), new Vector2(200, 60), 16);
 
         // Player 2 (AI Right) - right side
         TextMeshProUGUI playerInfo2 = CreateText(canvasObj.transform, "PlayerInfo_Right",
-            "AI_Right\nCards: 17",
+            "\u9c81\u667a\u6df1\nCards: 17",  // 鲁智深
             new Vector2(1, 0.5f), new Vector2(1, 0.5f),
             new Vector2(-100, 0), new Vector2(200, 60), 16);
 
@@ -95,7 +95,7 @@ public class GameSetup : MonoBehaviour
 
         // Message text (center top)
         TextMeshProUGUI messageText = CreateText(canvasObj.transform, "MessageText",
-            "Welcome to Dou Di Zhu!",
+            "\u6b22\u8fce\u6765\u5230\u6c34\u6d52\u4f20\u6597\u5730\u4e3b\uff01",  // 欢迎来到水浒传斗地主！
             new Vector2(0.5f, 0.75f), new Vector2(0.5f, 0.75f),
             Vector2.zero, new Vector2(600, 50), 24);
 
@@ -116,13 +116,13 @@ public class GameSetup : MonoBehaviour
         bidPanelRect.sizeDelta = new Vector2(700, 60);
 
         Button bid1Button = CreateButton(bidPanel.transform, "Bid1Button",
-            "1 Point", new Vector2(-240, 0), new Vector2(140, 50));
+            "1\u5206", new Vector2(-240, 0), new Vector2(140, 50));   // 1分
         Button bid2Button = CreateButton(bidPanel.transform, "Bid2Button",
-            "2 Points", new Vector2(-80, 0), new Vector2(140, 50));
+            "2\u5206", new Vector2(-80, 0), new Vector2(140, 50));   // 2分
         Button bid3Button = CreateButton(bidPanel.transform, "Bid3Button",
-            "3 Points", new Vector2(80, 0), new Vector2(140, 50));
+            "3\u5206", new Vector2(80, 0), new Vector2(140, 50));    // 3分
         Button noBidButton = CreateButton(bidPanel.transform, "NoBidButton",
-            "Pass", new Vector2(240, 0), new Vector2(140, 50));
+            "\u4e0d\u53eb", new Vector2(240, 0), new Vector2(140, 50));  // 不叫
 
         // ==================== Play Panel ====================
 
@@ -135,14 +135,14 @@ public class GameSetup : MonoBehaviour
         playPanelRect.sizeDelta = new Vector2(400, 60);
 
         Button playButton = CreateButton(playPanel.transform, "PlayButton",
-            "Play", new Vector2(-110, 0), new Vector2(180, 50));
+            "\u51fa\u724c", new Vector2(-110, 0), new Vector2(180, 50));  // 出牌
         Button passButton = CreateButton(playPanel.transform, "PassButton",
-            "Pass", new Vector2(110, 0), new Vector2(180, 50));
+            "\u4e0d\u51fa", new Vector2(110, 0), new Vector2(180, 50));  // 不出
 
         // ==================== Restart Button ====================
 
         Button restartButton = CreateButton(canvasObj.transform, "RestartButton",
-            "Play Again", Vector2.zero, new Vector2(200, 60));
+            "\u518d\u6765\u4e00\u5c40", Vector2.zero, new Vector2(200, 60));  // 再来一局
         RectTransform restartRect = restartButton.GetComponent<RectTransform>();
         restartRect.anchorMin = new Vector2(0.5f, 0.2f);
         restartRect.anchorMax = new Vector2(0.5f, 0.2f);
@@ -165,17 +165,17 @@ public class GameSetup : MonoBehaviour
         pauseBg.color = new Color(0.15f, 0.12f, 0.1f, 0.95f);
 
         // "PAUSED" title
-        CreateText(pauseCenter.transform, "PausedTitle", "PAUSED",
+        CreateText(pauseCenter.transform, "PausedTitle", "\u6682\u505c",  // 暂停
             new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
             new Vector2(0, -40), new Vector2(300, 50), 32);
 
         // Resume, Restart, Quit buttons
         Button resumeButton = CreateButton(pauseCenter.transform, "ResumeButton",
-            "Resume", new Vector2(0, 30), new Vector2(220, 50));
+            "\u7ee7\u7eed\u6e38\u620f", new Vector2(0, 30), new Vector2(220, 50));  // 继续游戏
         Button pauseRestartButton = CreateButton(pauseCenter.transform, "PauseRestartButton",
-            "Restart", new Vector2(0, -30), new Vector2(220, 50));
+            "\u91cd\u65b0\u5f00\u59cb", new Vector2(0, -30), new Vector2(220, 50));  // 重新开始
         Button quitButton = CreateButton(pauseCenter.transform, "QuitButton",
-            "Quit", new Vector2(0, -90), new Vector2(220, 50));
+            "\u9000\u51fa\u6e38\u620f", new Vector2(0, -90), new Vector2(220, 50));  // 退出游戏
 
         // Start hidden
         pauseOverlay.SetActive(false);

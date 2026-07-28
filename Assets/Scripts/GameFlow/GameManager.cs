@@ -74,9 +74,9 @@ public class GameManager : MonoBehaviour
     public void StartGame()
     {
         // Initialize players
-        Players[0] = new Player(0, "You");
-        Players[1] = new Player(1, "AI_Left");
-        Players[2] = new Player(2, "AI_Right");
+        Players[0] = new Player(0, "\u4f60");        // 你
+        Players[1] = new Player(1, "\u6797\u51b2");    // 林冲
+        Players[2] = new Player(2, "\u9c81\u667a\u6df1");  // 鲁智深
 
         // Deal cards
         DealCards();
