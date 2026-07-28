@@ -105,17 +105,17 @@ public class GameSetup : MonoBehaviour
         handRect.anchorMin = new Vector2(0.5f, 0);
         handRect.anchorMax = new Vector2(0.5f, 0);
         handRect.pivot = new Vector2(0.5f, 0);
-        handRect.anchoredPosition = new Vector2(0, 15);
+        handRect.anchoredPosition = new Vector2(0, 30);
         handRect.sizeDelta = new Vector2(1600, 180);
         HandView handView = handArea.AddComponent<HandView>();
 
         // ==================== Player Info Labels ====================
 
-        // Player 0 (Human) - bottom center, below hand area
+        // Player 0 (Human) - bottom center, above hand area
         TextMeshProUGUI playerInfo0 = CreateText(canvasObj.transform, "PlayerInfo_You",
             "\u4f60",  // 你
             new Vector2(0.5f, 0), new Vector2(0.5f, 0),
-            new Vector2(0, 200), new Vector2(300, 30), 14);
+            new Vector2(0, 220), new Vector2(300, 30), 14);
 
         // Player 1 (AI Left) - top left corner
         TextMeshProUGUI playerInfo1 = CreateText(canvasObj.transform, "PlayerInfo_Left",
@@ -123,11 +123,31 @@ public class GameSetup : MonoBehaviour
             new Vector2(0, 1), new Vector2(0, 1),
             new Vector2(120, -30), new Vector2(220, 30), 16);
 
+        // Player 1 (AI Left) card backs area - below info label
+        GameObject aiCards1 = new GameObject("AICards_Left");
+        aiCards1.transform.SetParent(canvasObj.transform, false);
+        RectTransform aiCards1Rect = aiCards1.AddComponent<RectTransform>();
+        aiCards1Rect.anchorMin = new Vector2(0, 1);
+        aiCards1Rect.anchorMax = new Vector2(0, 1);
+        aiCards1Rect.pivot = new Vector2(0, 1);
+        aiCards1Rect.anchoredPosition = new Vector2(30, -55);
+        aiCards1Rect.sizeDelta = new Vector2(200, 50);
+
         // Player 2 (AI Right) - top right corner
         TextMeshProUGUI playerInfo2 = CreateText(canvasObj.transform, "PlayerInfo_Right",
             "\u9c81\u667a\u6df1 | \u624b\u724c: 17",  // 鲁智深 | 手牌: 17
             new Vector2(1, 1), new Vector2(1, 1),
             new Vector2(-130, -30), new Vector2(240, 30), 16);
+
+        // Player 2 (AI Right) card backs area - below info label
+        GameObject aiCards2 = new GameObject("AICards_Right");
+        aiCards2.transform.SetParent(canvasObj.transform, false);
+        RectTransform aiCards2Rect = aiCards2.AddComponent<RectTransform>();
+        aiCards2Rect.anchorMin = new Vector2(1, 1);
+        aiCards2Rect.anchorMax = new Vector2(1, 1);
+        aiCards2Rect.pivot = new Vector2(1, 1);
+        aiCards2Rect.anchoredPosition = new Vector2(-30, -55);
+        aiCards2Rect.sizeDelta = new Vector2(200, 50);
 
         TextMeshProUGUI[] playerInfoTexts = { playerInfo0, playerInfo1, playerInfo2 };
 
@@ -143,25 +163,25 @@ public class GameSetup : MonoBehaviour
         played0Rect.anchoredPosition = Vector2.zero;
         played0Rect.sizeDelta = new Vector2(900, 160);
 
-        // Player 1 (AI Left) played cards - center-left, below Lin Chong info
+        // Player 1 (AI Left) played cards - center-left, closer to middle
         GameObject playedArea1 = new GameObject("PlayedCards_Left");
         playedArea1.transform.SetParent(canvasObj.transform, false);
         RectTransform played1Rect = playedArea1.AddComponent<RectTransform>();
-        played1Rect.anchorMin = new Vector2(0.3f, 0.65f);
-        played1Rect.anchorMax = new Vector2(0.3f, 0.65f);
+        played1Rect.anchorMin = new Vector2(0.35f, 0.65f);
+        played1Rect.anchorMax = new Vector2(0.35f, 0.65f);
         played1Rect.pivot = new Vector2(0.5f, 0.5f);
         played1Rect.anchoredPosition = Vector2.zero;
-        played1Rect.sizeDelta = new Vector2(500, 150);
+        played1Rect.sizeDelta = new Vector2(400, 150);
 
-        // Player 2 (AI Right) played cards - center-right, below Lu Zhishen info
+        // Player 2 (AI Right) played cards - center-right, closer to middle
         GameObject playedArea2 = new GameObject("PlayedCards_Right");
         playedArea2.transform.SetParent(canvasObj.transform, false);
         RectTransform played2Rect = playedArea2.AddComponent<RectTransform>();
-        played2Rect.anchorMin = new Vector2(0.7f, 0.65f);
-        played2Rect.anchorMax = new Vector2(0.7f, 0.65f);
+        played2Rect.anchorMin = new Vector2(0.65f, 0.65f);
+        played2Rect.anchorMax = new Vector2(0.65f, 0.65f);
         played2Rect.pivot = new Vector2(0.5f, 0.5f);
         played2Rect.anchoredPosition = Vector2.zero;
-        played2Rect.sizeDelta = new Vector2(500, 150);
+        played2Rect.sizeDelta = new Vector2(400, 150);
 
         Transform[] playedAreas = { playedArea0.transform, playedArea1.transform, playedArea2.transform };
 
@@ -186,7 +206,7 @@ public class GameSetup : MonoBehaviour
         RectTransform bidPanelRect = bidPanel.AddComponent<RectTransform>();
         bidPanelRect.anchorMin = new Vector2(0.5f, 0);
         bidPanelRect.anchorMax = new Vector2(0.5f, 0);
-        bidPanelRect.anchoredPosition = new Vector2(0, 240);
+        bidPanelRect.anchoredPosition = new Vector2(0, 260);
         bidPanelRect.sizeDelta = new Vector2(700, 50);
 
         Button bid1Button = CreateButton(bidPanel.transform, "Bid1Button",
@@ -205,7 +225,7 @@ public class GameSetup : MonoBehaviour
         RectTransform playPanelRect = playPanel.AddComponent<RectTransform>();
         playPanelRect.anchorMin = new Vector2(0.5f, 0);
         playPanelRect.anchorMax = new Vector2(0.5f, 0);
-        playPanelRect.anchoredPosition = new Vector2(0, 240);
+        playPanelRect.anchoredPosition = new Vector2(0, 260);
         playPanelRect.sizeDelta = new Vector2(400, 50);
 
         Button playButton = CreateButton(playPanel.transform, "PlayButton",
@@ -231,8 +251,8 @@ public class GameSetup : MonoBehaviour
         skillRect.anchorMin = new Vector2(1, 0);
         skillRect.anchorMax = new Vector2(1, 0);
         skillRect.pivot = new Vector2(1, 0);
-        skillRect.anchoredPosition = new Vector2(-15, 15);
-        skillRect.sizeDelta = new Vector2(150, 200);
+        skillRect.anchoredPosition = new Vector2(-15, 30);
+        skillRect.sizeDelta = new Vector2(120, 160);
         Image skillBg = skillPanel.AddComponent<Image>();
         skillBg.color = new Color(0.1f, 0.08f, 0.06f, 0.8f);
 
@@ -283,13 +303,14 @@ public class GameSetup : MonoBehaviour
         GameUIManager uiManager = canvasObj.AddComponent<GameUIManager>();
         handView.Init(uiManager);
         uiManager.Init(handView, turnManager, bidManager, scoreManager, aiPlayer);
+        Transform[] aiCardAreas = { aiCards1.transform, aiCards2.transform };
         uiManager.SetUIElements(
             playButton, passButton,
             bid1Button, bid2Button, bid3Button, noBidButton,
             bidPanel, playPanel,
             messageText, lastPlayedText,
             playerInfoTexts, restartButton,
-            playedAreas
+            playedAreas, aiCardAreas
         );
 
         // Wire pause panel
@@ -356,16 +377,22 @@ public class GameSetup : MonoBehaviour
         rect.sizeDelta = size;
 
         Image img = obj.AddComponent<Image>();
-        img.color = new Color(0.9f, 0.85f, 0.7f); // Light tan button color
+        img.color = new Color(0.15f, 0.12f, 0.08f, 0.9f); // Dark brown background
+
+        // Gold border outline
+        Outline btnOutline = obj.AddComponent<Outline>();
+        btnOutline.effectColor = new Color(0.7f, 0.6f, 0.35f); // Gold border
+        btnOutline.effectDistance = new Vector2(1.5f, 1.5f);
 
         Button btn = obj.AddComponent<Button>();
         ColorBlock colors = btn.colors;
-        colors.highlightedColor = new Color(1f, 0.95f, 0.8f);
-        colors.pressedColor = new Color(0.7f, 0.65f, 0.5f);
-        colors.disabledColor = new Color(0.5f, 0.5f, 0.5f);
+        colors.normalColor = new Color(0.15f, 0.12f, 0.08f, 0.9f);
+        colors.highlightedColor = new Color(0.25f, 0.2f, 0.12f, 0.95f);
+        colors.pressedColor = new Color(0.1f, 0.08f, 0.05f, 1f);
+        colors.disabledColor = new Color(0.2f, 0.2f, 0.2f, 0.6f);
         btn.colors = colors;
 
-        // Button label text
+        // Button label text - gold color to match theme
         GameObject textObj = new GameObject("Text");
         textObj.transform.SetParent(obj.transform, false);
         RectTransform textRect = textObj.AddComponent<RectTransform>();
@@ -379,7 +406,7 @@ public class GameSetup : MonoBehaviour
         tmp.text = label;
         tmp.fontSize = 20;
         tmp.alignment = TextAlignmentOptions.Center;
-        tmp.color = new Color(0.2f, 0.15f, 0.1f); // Dark brown text
+        tmp.color = new Color(0.95f, 0.85f, 0.55f); // Gold text
 
         return btn;
     }

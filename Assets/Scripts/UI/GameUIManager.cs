@@ -34,16 +34,27 @@ public class GameUIManager : MonoBehaviour
     // Played cards display areas (one per player, positioned above each player)
     private Transform[] playedCardAreas;
 
+    // AI card back display areas (shows small card backs representing AI hand size)
+    private Transform[] aiCardBackAreas;
+
     // Display card size for played cards
     private static readonly float PLAYED_CARD_WIDTH = 100f;
     private static readonly float PLAYED_CARD_HEIGHT = 150f;
     private static readonly float PLAYED_CARD_SPACING = 40f;
+
+    // AI card back display size
+    private static readonly float AI_CARD_BACK_WIDTH = 25f;
+    private static readonly float AI_CARD_BACK_HEIGHT = 38f;
+    private static readonly float AI_CARD_BACK_SPACING = 12f;
 
     // Tracks which players passed (to show "不出" text)
     private bool[] playerPassed = new bool[3];
 
     // Cached Chinese font for dynamically created text
     private TMP_FontAsset cachedChineseFont;
+
+    // Cached card back sprite
+    private Sprite cachedCardBackSprite;
 
     // Pause menu state
     private GameObject pausePanel;
@@ -73,7 +84,7 @@ public class GameUIManager : MonoBehaviour
         GameObject bidPnl, GameObject playPnl,
         TextMeshProUGUI msgText, TextMeshProUGUI lastPlayed,
         TextMeshProUGUI[] playerInfos, Button restartBtn,
-        Transform[] playedAreas)
+        Transform[] playedAreas, Transform[] aiCardAreas)
     {
         playButton = playBtn;
         passButton = passBtn;
@@ -88,6 +99,7 @@ public class GameUIManager : MonoBehaviour
         playerInfoTexts = playerInfos;
         restartButton = restartBtn;
         playedCardAreas = playedAreas;
+        aiCardBackAreas = aiCardAreas;
 
         // Wire up button clicks
         playButton.onClick.AddListener(OnPlayClicked);
@@ -453,10 +465,20 @@ public class GameUIManager : MonoBehaviour
         // Hide restart button
         restartButton.gameObject.SetActive(false);
 
-        // Clear hand display, played cards, and last played text
+        // Clear hand display, played cards, card backs, and last played text
         handView.ClearHand();
         ClearAllPlayedAreas();
         lastPlayedText.text = "";
+
+        // Clear AI card backs
+        if (aiCardBackAreas != null)
+        {
+            foreach (Transform area in aiCardBackAreas)
+            {
+                for (int i = area.childCount - 1; i >= 0; i--)
+                    Destroy(area.GetChild(i).gameObject);
+            }
+        }
 
         // Start a fresh game
         BeginGame();
@@ -602,6 +624,54 @@ public class GameUIManager : MonoBehaviour
                 playerInfoTexts[i].text = $"{p.Name} {role} | \u624b\u724c: {p.Hand.Count}";
             }
         }
+
+        // Update AI card back displays
+        UpdateAICardBacks();
+    }
+
+    /// <summary>
+    /// Updates AI card back displays to show how many cards each AI player holds.
+    /// Uses small card_back images laid out horizontally.
+    /// </summary>
+    private void UpdateAICardBacks()
+    {
+        if (aiCardBackAreas == null) return;
+
+        for (int i = 0; i < aiCardBackAreas.Length; i++)
+        {
+            Transform area = aiCardBackAreas[i];
+
+            // Clear existing card backs
+            for (int c = area.childCount - 1; c >= 0; c--)
+                Destroy(area.GetChild(c).gameObject);
+
+            // AI player indices are 1 and 2 (area index 0=player1, 1=player2)
+            int playerIndex = i + 1;
+            Player p = GameManager.Instance.Players[playerIndex];
+            int cardCount = p.Hand.Count;
+
+            // Show card backs with tight overlap
+            float totalWidth = (cardCount - 1) * AI_CARD_BACK_SPACING + AI_CARD_BACK_WIDTH;
+            float startX = 0;  // Start from left edge
+
+            for (int j = 0; j < cardCount; j++)
+            {
+                GameObject backObj = new GameObject($"CardBack_{j}");
+                backObj.transform.SetParent(area, false);
+                RectTransform rect = backObj.AddComponent<RectTransform>();
+                rect.sizeDelta = new Vector2(AI_CARD_BACK_WIDTH, AI_CARD_BACK_HEIGHT);
+                rect.anchorMin = new Vector2(0, 0.5f);
+                rect.anchorMax = new Vector2(0, 0.5f);
+                rect.pivot = new Vector2(0, 0.5f);
+                rect.anchoredPosition = new Vector2(startX + j * AI_CARD_BACK_SPACING, 0);
+
+                Image img = backObj.AddComponent<Image>();
+                img.raycastTarget = false;
+                img.sprite = GetCardBackSprite();
+                img.type = Image.Type.Simple;
+                img.preserveAspect = true;
+            }
+        }
     }
 
     /// <summary>
@@ -610,6 +680,24 @@ public class GameUIManager : MonoBehaviour
     private void SetMessage(string msg)
     {
         messageText.text = msg;
+    }
+
+    /// <summary>
+    /// Returns the cached card back sprite, loading it on first call.
+    /// </summary>
+    private Sprite GetCardBackSprite()
+    {
+        if (cachedCardBackSprite == null)
+        {
+            Texture2D tex = Resources.Load<Texture2D>("Sprites/card_back");
+            if (tex != null)
+            {
+                cachedCardBackSprite = Sprite.Create(tex,
+                    new Rect(0, 0, tex.width, tex.height),
+                    new Vector2(0.5f, 0.5f));
+            }
+        }
+        return cachedCardBackSprite;
     }
 
     /// <summary>

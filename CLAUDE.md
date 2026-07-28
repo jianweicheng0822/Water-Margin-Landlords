@@ -66,5 +66,36 @@ Phase 1 - Classic single-player Dou Di Zhu with Water Margin visual style (playa
 1. **Phase 1** - Classic Dou Di Zhu with Water Margin card artwork and themed UI (current)
 2. **Phase 2** - Main menu, polished game background, styled bidding/play UI
 
+## Google Flow (AI Image Generation) Guide
+
+When Claude needs a visual asset that cannot be created through code alone, ask the user to generate it with Google Flow. Claude provides the prompt, the user generates and places the file.
+
+### When to use Google Flow
+- **Hero portraits/avatars** - 林冲, 鲁智深, 宋江 etc. character art for player profiles
+- **New card artwork** - if current card faces need redesign or new card types are added
+- **UI decorative elements** - ornamental frames, skill icons, role badges (地主/农民)
+- **Menu backgrounds** - main menu, settings screen, loading screen
+- **Effect sprites** - bomb explosion, rocket fire, victory/defeat banners
+- **Card back variants** - themed card back designs for different game modes
+
+### How to write effective prompts
+1. **Always specify the art style**: "Chinese ink wash painting style" (水墨画) to maintain visual consistency
+2. **Specify the color palette**: "dark tones, gold accents, warm earth colors, dark brown/amber background"
+3. **Specify the resolution**: e.g. "1920x1080" for backgrounds, square for icons/avatars
+4. **State what to exclude**: "no text, no characters" (for backgrounds), "no background" (for icons)
+5. **Reference the game theme**: "Water Margin (水浒传)", "Song Dynasty aesthetic"
+6. **For UI elements**: specify "dark atmosphere suitable for overlay" so assets work on the game's dark UI
+
+### File placement
+- Card sprites → `Assets/Resources/Sprites/card_*.jpeg`
+- Backgrounds → `Assets/Resources/Sprites/background*.jpeg`
+- Hero avatars → `Assets/Resources/Sprites/hero_*.png`
+- UI elements → `Assets/Resources/Sprites/ui_*.png`
+- Keep filenames in English, lowercase with underscores
+
+### Successful prompt examples
+- **Card artwork**: "Chinese ink wash painting, circular frame with gold border, [subject] illustration, dark aged parchment background, gold ink brush calligraphy, Water Margin theme, 512x768"
+- **Game background**: "Chinese ink wash painting style game table background, dark wooden table surface with subtle wood grain texture, faded water ink landscape painting border decorations, mountains and rivers in mist, Song Dynasty aesthetic, Water Margin theme, warm amber and dark brown tones, subtle golden ornamental corner borders, top-down view, 1920x1080, dark atmosphere, no text, no characters"
+
 ## Author
 jianweisde

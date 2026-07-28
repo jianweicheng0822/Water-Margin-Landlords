@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
 /// Visual representation of a single card in the UI.
@@ -17,13 +18,17 @@ public class CardView : MonoBehaviour
     // UI components
     private Image cardImage;
     private RectTransform rectTransform;
+    private Outline outline;
 
     // Visual constants
     private static readonly Color NORMAL_TINT = Color.white;
     private static readonly Color SELECTED_TINT = new Color(0.7f, 1f, 0.7f);  // Light green tint
+    private static readonly Color BORDER_COLOR = new Color(0.85f, 0.75f, 0.55f);  // Gold border
+    private static readonly Color SELECTED_BORDER_COLOR = new Color(0.5f, 1f, 0.5f);  // Green border when selected
     private static readonly float CARD_WIDTH = 110f;
     private static readonly float CARD_HEIGHT = 165f;
     private static readonly float SELECTED_OFFSET_Y = 20f;
+    private static readonly float BORDER_WIDTH = 2f;
 
     // Sprite cache: loaded once, shared by all CardView instances
     private static Dictionary<string, Sprite> spriteCache = new Dictionary<string, Sprite>();
@@ -141,6 +146,83 @@ public class CardView : MonoBehaviour
 
         // Image acts as raycast target for HandView hit detection
         cardImage.raycastTarget = true;
+
+        // Gold outline to make cards stand out from the dark background
+        outline = gameObject.AddComponent<Outline>();
+        outline.effectColor = BORDER_COLOR;
+        outline.effectDistance = new Vector2(BORDER_WIDTH, BORDER_WIDTH);
+
+        // Rank label at top-left corner for easy identification
+        CreateRankLabel();
+    }
+
+    /// <summary>
+    /// Creates a rank text label (e.g. "3", "K", "A") at the top-left of the card.
+    /// Uses a dark semi-transparent background for readability on varied artwork.
+    /// </summary>
+    private void CreateRankLabel()
+    {
+        string rankText = GetRankDisplayText(card);
+        if (string.IsNullOrEmpty(rankText)) return;
+
+        // Background panel behind the rank text
+        GameObject bgObj = new GameObject("RankBg");
+        bgObj.transform.SetParent(transform, false);
+        RectTransform bgRect = bgObj.AddComponent<RectTransform>();
+        bgRect.anchorMin = new Vector2(0, 1);
+        bgRect.anchorMax = new Vector2(0, 1);
+        bgRect.pivot = new Vector2(0, 1);
+        bgRect.anchoredPosition = new Vector2(3, -3);
+        bgRect.sizeDelta = new Vector2(28, 24);
+        Image bgImg = bgObj.AddComponent<Image>();
+        bgImg.color = new Color(0, 0, 0, 0.6f);
+        bgImg.raycastTarget = false;
+
+        // Rank text
+        GameObject textObj = new GameObject("RankText");
+        textObj.transform.SetParent(bgObj.transform, false);
+        RectTransform textRect = textObj.AddComponent<RectTransform>();
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.offsetMin = Vector2.zero;
+        textRect.offsetMax = Vector2.zero;
+
+        TextMeshProUGUI tmp = textObj.AddComponent<TextMeshProUGUI>();
+        tmp.text = rankText;
+        tmp.fontSize = 16;
+        tmp.alignment = TextAlignmentOptions.Center;
+        tmp.fontStyle = FontStyles.Bold;
+        tmp.raycastTarget = false;
+
+        // Color: red for jokers, white for others
+        bool isJoker = card.Rank == Rank.RedJoker || card.Rank == Rank.BlackJoker;
+        tmp.color = isJoker ? new Color(1f, 0.3f, 0.3f) : Color.white;
+    }
+
+    /// <summary>
+    /// Returns the display text for a card's rank.
+    /// </summary>
+    private static string GetRankDisplayText(Card card)
+    {
+        switch (card.Rank)
+        {
+            case Rank.Three: return "3";
+            case Rank.Four: return "4";
+            case Rank.Five: return "5";
+            case Rank.Six: return "6";
+            case Rank.Seven: return "7";
+            case Rank.Eight: return "8";
+            case Rank.Nine: return "9";
+            case Rank.Ten: return "10";
+            case Rank.Jack: return "J";
+            case Rank.Queen: return "Q";
+            case Rank.King: return "K";
+            case Rank.Ace: return "A";
+            case Rank.Two: return "2";
+            case Rank.RedJoker: return "\u738b";   // 王
+            case Rank.BlackJoker: return "\u738b";  // 王
+            default: return "";
+        }
     }
 
     /// <summary>
@@ -179,6 +261,7 @@ public class CardView : MonoBehaviour
     private void UpdateVisual()
     {
         cardImage.color = isSelected ? SELECTED_TINT : NORMAL_TINT;
+        outline.effectColor = isSelected ? SELECTED_BORDER_COLOR : BORDER_COLOR;
 
         Vector2 pos = rectTransform.anchoredPosition;
         pos.y = isSelected ? SELECTED_OFFSET_Y : 0f;
