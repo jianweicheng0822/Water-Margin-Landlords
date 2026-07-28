@@ -12,7 +12,7 @@ public class HandView : MonoBehaviour
     private List<CardView> cardViews = new List<CardView>();
 
     // Spacing between overlapping cards
-    private static readonly float CARD_SPACING = 45f;
+    private static readonly float CARD_SPACING = 50f;
 
     // Reference to the UI manager for notifying selection changes
     private GameUIManager uiManager;

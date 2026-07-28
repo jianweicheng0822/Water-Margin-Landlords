@@ -1,5 +1,8 @@
 # CLAUDE.md - Project Guidelines
 
+## Vision
+We are building a Water Margin (水浒传) themed Dou Di Zhu (Fight the Landlord) card game. Always remember this: every feature, UI, and design decision should serve this vision. The final product is a polished, Water Margin themed card game on Steam with multiplayer and character skills.
+
 ## Project
 Water Margin Landlords - A 2D Dou Di Zhu (Fight the Landlord) card game built with Unity + C#.
 Target platform: Steam (future). Currently focusing on single-player vs AI.

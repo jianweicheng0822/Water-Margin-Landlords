@@ -1,10 +1,10 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 /// <summary>
 /// Visual representation of a single card in the UI.
-/// Handles display, selection state, and click interaction.
+/// Loads card artwork from Resources/Sprites/ and handles selection state.
 /// </summary>
 public class CardView : MonoBehaviour
 {
@@ -15,20 +15,19 @@ public class CardView : MonoBehaviour
     private bool isSelected = false;
 
     // UI components
-    private Image backgroundImage;
-    private TextMeshProUGUI rankText;
-    private TextMeshProUGUI suitText;
-    private Button button;
+    private Image cardImage;
     private RectTransform rectTransform;
+    private Button button;
 
     // Visual constants
-    private static readonly Color NORMAL_COLOR = Color.white;
-    private static readonly Color SELECTED_COLOR = new Color(0.8f, 1f, 0.8f);  // Light green
-    private static readonly Color RED_SUIT_COLOR = new Color(0.8f, 0.1f, 0.1f);
-    private static readonly Color BLACK_SUIT_COLOR = new Color(0.1f, 0.1f, 0.1f);
-    private static readonly float CARD_WIDTH = 80f;
-    private static readonly float CARD_HEIGHT = 120f;
+    private static readonly Color NORMAL_TINT = Color.white;
+    private static readonly Color SELECTED_TINT = new Color(0.7f, 1f, 0.7f);  // Light green tint
+    private static readonly float CARD_WIDTH = 100f;
+    private static readonly float CARD_HEIGHT = 150f;
     private static readonly float SELECTED_OFFSET_Y = 20f;
+
+    // Sprite cache: loaded once, shared by all CardView instances
+    private static Dictionary<string, Sprite> spriteCache = new Dictionary<string, Sprite>();
 
     // Reference to parent hand view for selection callback
     private HandView parentHandView;
@@ -38,7 +37,6 @@ public class CardView : MonoBehaviour
     /// </summary>
     public static CardView Create(Card card, Transform parent, HandView handView)
     {
-        // Create card game object
         GameObject cardObj = new GameObject($"Card_{card}");
         cardObj.transform.SetParent(parent, false);
 
@@ -50,7 +48,7 @@ public class CardView : MonoBehaviour
     }
 
     /// <summary>
-    /// Builds the card's UI components programmatically.
+    /// Builds the card's UI using the artwork sprite.
     /// </summary>
     private void SetupUI()
     {
@@ -58,42 +56,75 @@ public class CardView : MonoBehaviour
         rectTransform = gameObject.AddComponent<RectTransform>();
         rectTransform.sizeDelta = new Vector2(CARD_WIDTH, CARD_HEIGHT);
 
-        // Background image (white card)
-        backgroundImage = gameObject.AddComponent<Image>();
-        backgroundImage.color = NORMAL_COLOR;
+        // Card image using artwork from Resources/Sprites/
+        cardImage = gameObject.AddComponent<Image>();
+        Sprite sprite = LoadCardSprite();
+        if (sprite != null)
+        {
+            cardImage.sprite = sprite;
+            cardImage.type = Image.Type.Simple;
+            cardImage.preserveAspect = true;
+        }
+        cardImage.color = NORMAL_TINT;
 
-        // Click button
+        // Click button for selection
         button = gameObject.AddComponent<Button>();
         button.onClick.AddListener(OnClick);
+    }
 
-        // Rank text (top-left)
-        GameObject rankObj = new GameObject("RankText");
-        rankObj.transform.SetParent(transform, false);
-        rankText = rankObj.AddComponent<TextMeshProUGUI>();
-        rankText.text = GetRankDisplay();
-        rankText.fontSize = 24;
-        rankText.fontStyle = FontStyles.Bold;
-        rankText.alignment = TextAlignmentOptions.TopLeft;
-        rankText.color = GetCardColor();
-        RectTransform rankRect = rankText.GetComponent<RectTransform>();
-        rankRect.anchorMin = new Vector2(0, 0);
-        rankRect.anchorMax = new Vector2(1, 1);
-        rankRect.offsetMin = new Vector2(5, 5);
-        rankRect.offsetMax = new Vector2(-5, -5);
+    /// <summary>
+    /// Loads the appropriate sprite for this card from Resources/Sprites/.
+    /// Uses a static cache so each texture is only loaded once.
+    /// </summary>
+    private Sprite LoadCardSprite()
+    {
+        string spriteName = GetSpriteName();
 
-        // Suit text (center)
-        GameObject suitObj = new GameObject("SuitText");
-        suitObj.transform.SetParent(transform, false);
-        suitText = suitObj.AddComponent<TextMeshProUGUI>();
-        suitText.text = GetSuitDisplay();
-        suitText.fontSize = 32;
-        suitText.alignment = TextAlignmentOptions.Center;
-        suitText.color = GetCardColor();
-        RectTransform suitRect = suitText.GetComponent<RectTransform>();
-        suitRect.anchorMin = new Vector2(0, 0);
-        suitRect.anchorMax = new Vector2(1, 1);
-        suitRect.offsetMin = new Vector2(5, 5);
-        suitRect.offsetMax = new Vector2(-5, -5);
+        // Return cached sprite if already loaded
+        if (spriteCache.TryGetValue(spriteName, out Sprite cached))
+            return cached;
+
+        // Load texture from Resources folder (path without extension)
+        Texture2D tex = Resources.Load<Texture2D>($"Sprites/{spriteName}");
+        if (tex == null)
+        {
+            Debug.LogWarning($"Card sprite not found: Sprites/{spriteName}");
+            return null;
+        }
+
+        // Create sprite from texture and cache it
+        Sprite sprite = Sprite.Create(tex,
+            new Rect(0, 0, tex.width, tex.height),
+            new Vector2(0.5f, 0.5f));
+        spriteCache[spriteName] = sprite;
+        return sprite;
+    }
+
+    /// <summary>
+    /// Returns the sprite filename (without extension) based on card rank.
+    /// Jokers use separate red/black sprites, all other ranks share one sprite per rank.
+    /// </summary>
+    private string GetSpriteName()
+    {
+        switch (card.Rank)
+        {
+            case Rank.Three: return "card_3";
+            case Rank.Four: return "card_4";
+            case Rank.Five: return "card_5";
+            case Rank.Six: return "card_6";
+            case Rank.Seven: return "card_7";
+            case Rank.Eight: return "card_8";
+            case Rank.Nine: return "card_9";
+            case Rank.Ten: return "card_10";
+            case Rank.Jack: return "card_J";
+            case Rank.Queen: return "card_Q";
+            case Rank.King: return "card_K";
+            case Rank.Ace: return "card_A";
+            case Rank.Two: return "card_2";
+            case Rank.RedJoker: return "card_joker_red";
+            case Rank.BlackJoker: return "card_joker_black";
+            default: return "card_back";
+        }
     }
 
     /// <summary>
@@ -108,70 +139,15 @@ public class CardView : MonoBehaviour
 
     /// <summary>
     /// Updates the card's visual appearance based on selection state.
-    /// Selected cards move up slightly and change color.
+    /// Selected cards move up slightly and get a green tint.
     /// </summary>
     private void UpdateVisual()
     {
-        backgroundImage.color = isSelected ? SELECTED_COLOR : NORMAL_COLOR;
+        cardImage.color = isSelected ? SELECTED_TINT : NORMAL_TINT;
 
         Vector2 pos = rectTransform.anchoredPosition;
         pos.y = isSelected ? SELECTED_OFFSET_Y : 0f;
         rectTransform.anchoredPosition = pos;
-    }
-
-    /// <summary>
-    /// Returns the display string for the card's rank.
-    /// </summary>
-    private string GetRankDisplay()
-    {
-        switch (card.Rank)
-        {
-            case Rank.Three: return "3";
-            case Rank.Four: return "4";
-            case Rank.Five: return "5";
-            case Rank.Six: return "6";
-            case Rank.Seven: return "7";
-            case Rank.Eight: return "8";
-            case Rank.Nine: return "9";
-            case Rank.Ten: return "10";
-            case Rank.Jack: return "J";
-            case Rank.Queen: return "Q";
-            case Rank.King: return "K";
-            case Rank.Ace: return "A";
-            case Rank.Two: return "2";
-            case Rank.BlackJoker: return "\u5c0f";  // 小
-            case Rank.RedJoker: return "\u5927";    // 大
-            default: return "?";
-        }
-    }
-
-    /// <summary>
-    /// Returns the display symbol for the card's suit.
-    /// </summary>
-    private string GetSuitDisplay()
-    {
-        switch (card.Suit)
-        {
-            case Suit.Spade: return "\u2660";   // ♠
-            case Suit.Heart: return "\u2665";   // ♥
-            case Suit.Diamond: return "\u2666"; // ♦
-            case Suit.Club: return "\u2663";    // ♣
-            default: return "\u2605";           // ★ for jokers
-        }
-    }
-
-    /// <summary>
-    /// Returns the text color based on suit (red for hearts/diamonds, black for others).
-    /// </summary>
-    private Color GetCardColor()
-    {
-        if (card.Rank == Rank.RedJoker)
-            return RED_SUIT_COLOR;
-        if (card.Rank == Rank.BlackJoker)
-            return BLACK_SUIT_COLOR;
-        if (card.Suit == Suit.Heart || card.Suit == Suit.Diamond)
-            return RED_SUIT_COLOR;
-        return BLACK_SUIT_COLOR;
     }
 
     // ==================== Public Accessors ====================
