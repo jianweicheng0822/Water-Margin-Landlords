@@ -120,6 +120,21 @@ public class GameSetup : MonoBehaviour
             Debug.LogWarning("Menu background image not found: Sprites/menu_background");
         }
 
+        // Soft radial gradient behind logo — makes title pop without visible border
+        GameObject gradientObj = new GameObject("LogoGradient");
+        gradientObj.transform.SetParent(menuPanel.transform, false);
+        RectTransform gradientRect = gradientObj.AddComponent<RectTransform>();
+        gradientRect.anchorMin = new Vector2(0.5f, 0.65f);
+        gradientRect.anchorMax = new Vector2(0.5f, 0.65f);
+        gradientRect.pivot = new Vector2(0.5f, 0.5f);
+        gradientRect.anchoredPosition = Vector2.zero;
+        gradientRect.sizeDelta = new Vector2(900, 450);
+        Image gradientImg = gradientObj.AddComponent<Image>();
+        gradientImg.raycastTarget = false;
+        gradientImg.sprite = CreateRadialGradientSprite(256, 128, 0.35f);
+        gradientImg.type = Image.Type.Simple;
+        gradientImg.preserveAspect = false;
+
         // Game logo image (calligraphy 水浒传 / 斗地主)
         GameObject logoObj = new GameObject("MenuLogo");
         logoObj.transform.SetParent(menuPanel.transform, false);
@@ -544,6 +559,35 @@ public class GameSetup : MonoBehaviour
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = Color.white;
         return tmp;
+    }
+
+    /// <summary>
+    /// Generates a radial gradient texture at runtime — black center fading to transparent edges.
+    /// Used as a subtle backdrop to lift UI elements from busy backgrounds.
+    /// </summary>
+    private Sprite CreateRadialGradientSprite(int width, int height, float peakAlpha)
+    {
+        Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
+        Color[] pixels = new Color[width * height];
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                // Normalized distance from center (0 = center, 1 = edge)
+                float dx = (x - width * 0.5f) / (width * 0.5f);
+                float dy = (y - height * 0.5f) / (height * 0.5f);
+                float dist = Mathf.Sqrt(dx * dx + dy * dy);
+
+                // Smooth falloff: fully opaque at center, transparent at edge
+                float alpha = Mathf.Clamp01(1f - Mathf.SmoothStep(0f, 1f, dist)) * peakAlpha;
+                pixels[y * width + x] = new Color(0f, 0f, 0f, alpha);
+            }
+        }
+
+        tex.SetPixels(pixels);
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, width, height), new Vector2(0.5f, 0.5f));
     }
 
     /// <summary>
