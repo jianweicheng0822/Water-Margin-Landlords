@@ -14,6 +14,9 @@ public class GameSetup : MonoBehaviour
     // Cached Chinese font asset for all TMP text elements
     private TMP_FontAsset chineseFont;
 
+    // Cached button background sprite for all themed buttons
+    private Sprite buttonSprite;
+
     // Shared canvas used by both menu and game
     private GameObject canvasObj;
 
@@ -43,6 +46,19 @@ public class GameSetup : MonoBehaviour
         else
         {
             Debug.LogWarning("NotoSansSC-Regular.ttf not found in Resources. Chinese text will not display.");
+        }
+
+        // Load button background sprite
+        Texture2D btnTex = Resources.Load<Texture2D>("Sprites/button");
+        if (btnTex != null)
+        {
+            buttonSprite = Sprite.Create(btnTex,
+                new Rect(0, 0, btnTex.width, btnTex.height),
+                new Vector2(0.5f, 0.5f));
+        }
+        else
+        {
+            Debug.LogWarning("Button background not found: Sprites/button");
         }
 
         // Create the main UI canvas
@@ -542,19 +558,29 @@ public class GameSetup : MonoBehaviour
         rect.sizeDelta = size;
 
         Image img = obj.AddComponent<Image>();
-        img.color = new Color(0.15f, 0.12f, 0.08f, 0.9f); // Dark brown background
-
-        // Gold border outline
-        Outline btnOutline = obj.AddComponent<Outline>();
-        btnOutline.effectColor = new Color(0.7f, 0.6f, 0.35f); // Gold border
-        btnOutline.effectDistance = new Vector2(1.5f, 1.5f);
+        if (buttonSprite != null)
+        {
+            // Use themed button background image
+            img.sprite = buttonSprite;
+            img.type = Image.Type.Simple;
+            img.preserveAspect = false;
+            img.color = Color.white; // No tint, show image as-is
+        }
+        else
+        {
+            // Fallback to solid color if sprite not found
+            img.color = new Color(0.15f, 0.12f, 0.08f, 0.9f);
+            Outline btnOutline = obj.AddComponent<Outline>();
+            btnOutline.effectColor = new Color(0.7f, 0.6f, 0.35f);
+            btnOutline.effectDistance = new Vector2(1.5f, 1.5f);
+        }
 
         Button btn = obj.AddComponent<Button>();
         ColorBlock colors = btn.colors;
-        colors.normalColor = new Color(0.15f, 0.12f, 0.08f, 0.9f);
-        colors.highlightedColor = new Color(0.25f, 0.2f, 0.12f, 0.95f);
-        colors.pressedColor = new Color(0.1f, 0.08f, 0.05f, 1f);
-        colors.disabledColor = new Color(0.2f, 0.2f, 0.2f, 0.6f);
+        colors.normalColor = Color.white;                              // Original image colors
+        colors.highlightedColor = new Color(1f, 0.92f, 0.75f, 1f);    // Warm golden glow on hover
+        colors.pressedColor = new Color(0.7f, 0.65f, 0.55f, 1f);      // Darker when pressed
+        colors.disabledColor = new Color(0.4f, 0.4f, 0.4f, 0.6f);     // Greyed out when disabled
         btn.colors = colors;
 
         // Button label text - gold color to match theme
@@ -569,7 +595,7 @@ public class GameSetup : MonoBehaviour
         TextMeshProUGUI tmp = textObj.AddComponent<TextMeshProUGUI>();
         if (chineseFont != null) tmp.font = chineseFont;
         tmp.text = label;
-        tmp.fontSize = 20;
+        tmp.fontSize = 22;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = new Color(0.95f, 0.85f, 0.55f); // Gold text
 
