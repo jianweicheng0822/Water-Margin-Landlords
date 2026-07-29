@@ -377,42 +377,99 @@ public class GameSetup : MonoBehaviour
 
         // ==================== Player Info Labels ====================
 
-        // Player 0 (Human) - bottom center, above hand area
-        TextMeshProUGUI playerInfo0 = CreateText(gameObjectsRoot.transform, "PlayerInfo_You",
-            "\u4f60",  // 你
-            new Vector2(0.5f, 0), new Vector2(0.5f, 0),
-            new Vector2(0, 220), new Vector2(300, 30), 14);
+        // --- Player 0 (Human / 宋江) - bottom left, above hand area ---
+        // Container panel for avatar + name label
+        GameObject playerPanel0 = new GameObject("PlayerPanel_You");
+        playerPanel0.transform.SetParent(gameObjectsRoot.transform, false);
+        RectTransform playerPanel0Rect = playerPanel0.AddComponent<RectTransform>();
+        playerPanel0Rect.anchorMin = new Vector2(0, 0);
+        playerPanel0Rect.anchorMax = new Vector2(0, 0);
+        playerPanel0Rect.pivot = new Vector2(0, 0);
+        playerPanel0Rect.anchoredPosition = new Vector2(20, 215);
+        playerPanel0Rect.sizeDelta = new Vector2(200, 65);
 
-        // Player 1 (AI Left) - top left corner
-        TextMeshProUGUI playerInfo1 = CreateText(gameObjectsRoot.transform, "PlayerInfo_Left",
+        // Human player avatar (宋江)
+        GameObject avatar0 = CreateAvatar(playerPanel0.transform, "Avatar_You", "Song_Jiang", 60);
+        RectTransform avatar0Rect = avatar0.GetComponent<RectTransform>();
+        avatar0Rect.anchorMin = new Vector2(0, 0.5f);
+        avatar0Rect.anchorMax = new Vector2(0, 0.5f);
+        avatar0Rect.pivot = new Vector2(0, 0.5f);
+        avatar0Rect.anchoredPosition = new Vector2(0, 0);
+
+        // Human player name text (right of avatar)
+        TextMeshProUGUI playerInfo0 = CreateText(playerPanel0.transform, "PlayerInfo_You",
+            "\u5b8b\u6c5f",  // 宋江
+            new Vector2(0, 0.5f), new Vector2(0, 0.5f),
+            new Vector2(100, 0), new Vector2(120, 30), 14);
+
+        // --- Player 1 (AI Left / 林冲) - top left corner ---
+        // Container panel for avatar + name label
+        GameObject playerPanel1 = new GameObject("PlayerPanel_Left");
+        playerPanel1.transform.SetParent(gameObjectsRoot.transform, false);
+        RectTransform playerPanel1Rect = playerPanel1.AddComponent<RectTransform>();
+        playerPanel1Rect.anchorMin = new Vector2(0, 1);
+        playerPanel1Rect.anchorMax = new Vector2(0, 1);
+        playerPanel1Rect.pivot = new Vector2(0, 1);
+        playerPanel1Rect.anchoredPosition = new Vector2(15, -10);
+        playerPanel1Rect.sizeDelta = new Vector2(250, 75);
+
+        // AI Left avatar (林冲)
+        GameObject avatar1 = CreateAvatar(playerPanel1.transform, "Avatar_Left", "Lin_Chong", 70);
+        RectTransform avatar1Rect = avatar1.GetComponent<RectTransform>();
+        avatar1Rect.anchorMin = new Vector2(0, 0.5f);
+        avatar1Rect.anchorMax = new Vector2(0, 0.5f);
+        avatar1Rect.pivot = new Vector2(0, 0.5f);
+        avatar1Rect.anchoredPosition = new Vector2(0, 0);
+
+        // AI Left name + card count text (right of avatar)
+        TextMeshProUGUI playerInfo1 = CreateText(playerPanel1.transform, "PlayerInfo_Left",
             "\u6797\u51b2 | \u624b\u724c: 17",  // 林冲 | 手牌: 17
-            new Vector2(0, 1), new Vector2(0, 1),
-            new Vector2(120, -30), new Vector2(220, 30), 16);
+            new Vector2(0, 0.5f), new Vector2(0, 0.5f),
+            new Vector2(120, 0), new Vector2(170, 30), 16);
 
-        // Player 1 (AI Left) card backs area - below info label
+        // Player 1 (AI Left) card backs area - below the panel, shifted right to clear avatar
         GameObject aiCards1 = new GameObject("AICards_Left");
         aiCards1.transform.SetParent(gameObjectsRoot.transform, false);
         RectTransform aiCards1Rect = aiCards1.AddComponent<RectTransform>();
         aiCards1Rect.anchorMin = new Vector2(0, 1);
         aiCards1Rect.anchorMax = new Vector2(0, 1);
         aiCards1Rect.pivot = new Vector2(0, 1);
-        aiCards1Rect.anchoredPosition = new Vector2(30, -55);
+        aiCards1Rect.anchoredPosition = new Vector2(30, -90);
         aiCards1Rect.sizeDelta = new Vector2(200, 50);
 
-        // Player 2 (AI Right) - top right corner
-        TextMeshProUGUI playerInfo2 = CreateText(gameObjectsRoot.transform, "PlayerInfo_Right",
-            "\u9c81\u667a\u6df1 | \u624b\u724c: 17",  // 鲁智深 | 手牌: 17
-            new Vector2(1, 1), new Vector2(1, 1),
-            new Vector2(-130, -30), new Vector2(240, 30), 16);
+        // --- Player 2 (AI Right / 鲁智深) - top right corner ---
+        // Container panel for avatar + name label
+        GameObject playerPanel2 = new GameObject("PlayerPanel_Right");
+        playerPanel2.transform.SetParent(gameObjectsRoot.transform, false);
+        RectTransform playerPanel2Rect = playerPanel2.AddComponent<RectTransform>();
+        playerPanel2Rect.anchorMin = new Vector2(1, 1);
+        playerPanel2Rect.anchorMax = new Vector2(1, 1);
+        playerPanel2Rect.pivot = new Vector2(1, 1);
+        playerPanel2Rect.anchoredPosition = new Vector2(-15, -10);
+        playerPanel2Rect.sizeDelta = new Vector2(250, 75);
 
-        // Player 2 (AI Right) card backs area - below info label
+        // AI Right avatar (鲁智深) - on the right side of the panel
+        GameObject avatar2 = CreateAvatar(playerPanel2.transform, "Avatar_Right", "Lu_Zhishen", 70);
+        RectTransform avatar2Rect = avatar2.GetComponent<RectTransform>();
+        avatar2Rect.anchorMin = new Vector2(1, 0.5f);
+        avatar2Rect.anchorMax = new Vector2(1, 0.5f);
+        avatar2Rect.pivot = new Vector2(1, 0.5f);
+        avatar2Rect.anchoredPosition = new Vector2(0, 0);
+
+        // AI Right name + card count text (left of avatar)
+        TextMeshProUGUI playerInfo2 = CreateText(playerPanel2.transform, "PlayerInfo_Right",
+            "\u9c81\u667a\u6df1 | \u624b\u724c: 17",  // 鲁智深 | 手牌: 17
+            new Vector2(1, 0.5f), new Vector2(1, 0.5f),
+            new Vector2(-120, 0), new Vector2(170, 30), 16);
+
+        // Player 2 (AI Right) card backs area - below the panel, shifted left to clear avatar
         GameObject aiCards2 = new GameObject("AICards_Right");
         aiCards2.transform.SetParent(gameObjectsRoot.transform, false);
         RectTransform aiCards2Rect = aiCards2.AddComponent<RectTransform>();
         aiCards2Rect.anchorMin = new Vector2(1, 1);
         aiCards2Rect.anchorMax = new Vector2(1, 1);
         aiCards2Rect.pivot = new Vector2(1, 1);
-        aiCards2Rect.anchoredPosition = new Vector2(-30, -55);
+        aiCards2Rect.anchoredPosition = new Vector2(-30, -90);
         aiCards2Rect.sizeDelta = new Vector2(200, 50);
 
         TextMeshProUGUI[] playerInfoTexts = { playerInfo0, playerInfo1, playerInfo2 };
@@ -879,6 +936,69 @@ public class GameSetup : MonoBehaviour
         tex.SetPixels(pixels);
         tex.Apply();
         return Sprite.Create(tex, new Rect(0, 0, width, height), new Vector2(0.5f, 0.5f));
+    }
+
+    /// <summary>
+    /// Creates a circular avatar image with a gold border outline.
+    /// Loads the hero texture from Resources/Sprites/ by the given sprite name.
+    /// </summary>
+    private GameObject CreateAvatar(Transform parent, string name, string spriteName, float size)
+    {
+        // Container for avatar + border
+        GameObject container = new GameObject(name);
+        container.transform.SetParent(parent, false);
+        RectTransform containerRect = container.AddComponent<RectTransform>();
+        containerRect.sizeDelta = new Vector2(size, size);
+
+        // Portrait image
+        GameObject portrait = new GameObject("Portrait");
+        portrait.transform.SetParent(container.transform, false);
+        RectTransform portraitRect = portrait.AddComponent<RectTransform>();
+        portraitRect.anchorMin = Vector2.zero;
+        portraitRect.anchorMax = Vector2.one;
+        portraitRect.offsetMin = new Vector2(3, 3);   // Inset slightly for border
+        portraitRect.offsetMax = new Vector2(-3, -3);
+        Image portraitImg = portrait.AddComponent<Image>();
+        portraitImg.raycastTarget = false;
+
+        // Load hero texture
+        Texture2D heroTex = Resources.Load<Texture2D>("Sprites/" + spriteName);
+        if (heroTex != null)
+        {
+            portraitImg.sprite = Sprite.Create(heroTex,
+                new Rect(0, 0, heroTex.width, heroTex.height),
+                new Vector2(0.5f, 0.5f));
+            portraitImg.type = Image.Type.Simple;
+            portraitImg.preserveAspect = true;
+        }
+        else
+        {
+            // Fallback gray square if image not found
+            portraitImg.color = new Color(0.3f, 0.25f, 0.2f);
+            Debug.LogWarning("Hero avatar not found: Sprites/" + spriteName);
+        }
+
+        // Gold border outline (matches themed gold color)
+        Outline borderOutline = portrait.AddComponent<Outline>();
+        borderOutline.effectColor = new Color(0.6f, 0.5f, 0.3f);
+        borderOutline.effectDistance = new Vector2(2, 2);
+
+        // Second outline pass for thicker border effect
+        Outline borderOutline2 = portrait.AddComponent<Outline>();
+        borderOutline2.effectColor = new Color(0.6f, 0.5f, 0.3f);
+        borderOutline2.effectDistance = new Vector2(-2, -2);
+
+        // Dark background behind the portrait to frame it
+        Image containerImg = container.AddComponent<Image>();
+        containerImg.color = new Color(0.08f, 0.06f, 0.04f, 1f);
+        containerImg.raycastTarget = false;
+
+        // Gold border on the outer container
+        Outline containerOutline = container.AddComponent<Outline>();
+        containerOutline.effectColor = new Color(0.6f, 0.5f, 0.3f);
+        containerOutline.effectDistance = new Vector2(2, 2);
+
+        return container;
     }
 
     /// <summary>
