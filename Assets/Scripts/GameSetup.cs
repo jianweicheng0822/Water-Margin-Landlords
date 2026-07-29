@@ -48,6 +48,13 @@ public class GameSetup : MonoBehaviour
 
     private void Start()
     {
+        // Initialize sound manager singleton (persists across scenes)
+        if (SoundManager.Instance == null)
+        {
+            GameObject soundObj = new GameObject("SoundManager");
+            soundObj.AddComponent<SoundManager>();
+        }
+
         SetupSharedResources();
         CreateMainMenu();
     }

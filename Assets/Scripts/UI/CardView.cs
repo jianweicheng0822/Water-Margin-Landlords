@@ -241,6 +241,10 @@ public class CardView : MonoBehaviour
         isSelected = !isSelected;
         UpdateVisual();
         parentHandView?.OnCardSelectionChanged();
+
+        // Play card select/deselect click sound
+        if (SoundManager.Instance != null)
+            SoundManager.Instance.Play("select");
     }
 
     /// <summary>

@@ -347,6 +347,7 @@ public class GameUIManager : MonoBehaviour
     private void OnBidScoreClicked(int score)
     {
         StopTimer();
+        if (SoundManager.Instance != null) SoundManager.Instance.Play("bid");
         bidPanel.SetActive(false);
         bidManager.BidScore(score);
 
@@ -484,9 +485,11 @@ public class GameUIManager : MonoBehaviour
         if (currentPlayer.Hand.Count == prevCardCount)
         {
             playerPassed[currentPlayer.Index] = true;
+            if (SoundManager.Instance != null) SoundManager.Instance.Play("pass");
         }
         else
         {
+            PlayCardSFX();  // Play appropriate sound based on combo type
             playerPassed = new bool[3];  // Reset pass states when cards are played
         }
 
@@ -514,6 +517,7 @@ public class GameUIManager : MonoBehaviour
         if (success)
         {
             StopTimer();
+            PlayCardSFX();  // Play appropriate sound based on combo type
             playerPassed = new bool[3];  // Reset pass states when cards are played
             handView.RemoveCards(selected);
             playPanel.SetActive(false);
@@ -542,6 +546,7 @@ public class GameUIManager : MonoBehaviour
         if (success)
         {
             StopTimer();
+            if (SoundManager.Instance != null) SoundManager.Instance.Play("pass");
             playerPassed[0] = true;
             handView.DeselectAll();
             playPanel.SetActive(false);
@@ -552,6 +557,25 @@ public class GameUIManager : MonoBehaviour
         {
             SetMessage("\u5fc5\u987b\u51fa\u724c\uff01\u81ea\u7531\u51fa\u724c\u4e0d\u80fd\u8df3\u8fc7\u3002");  // 必须出牌！自由出牌不能跳过。
         }
+    }
+
+    /// <summary>
+    /// Plays the appropriate sound effect based on the last played combo type.
+    /// Bombs and rockets get special dramatic sounds; normal plays get a standard sound.
+    /// </summary>
+    private void PlayCardSFX()
+    {
+        if (SoundManager.Instance == null) return;
+
+        CardCombo combo = turnManager.GetLastPlayedCombo();
+        if (combo == null) return;
+
+        if (combo.Type == CardComboType.Rocket)
+            SoundManager.Instance.Play("rocket");
+        else if (combo.Type == CardComboType.Bomb)
+            SoundManager.Instance.Play("bomb");
+        else
+            SoundManager.Instance.Play("play");
     }
 
     // ==================== Game Over ====================
@@ -567,6 +591,14 @@ public class GameUIManager : MonoBehaviour
         if (winner != null)
         {
             scoreManager.CalculateScores(winner.Index);
+
+            // Play win or lose sound based on whether human won
+            if (SoundManager.Instance != null)
+            {
+                bool humanWon = (winner.Index == 0) ||
+                    (!winner.IsLandlord && !GameManager.Instance.Players[0].IsLandlord);
+                SoundManager.Instance.Play(humanWon ? "win" : "lose");
+            }
 
             // Build result message with score details
             string winMsg = winner.IsLandlord
@@ -919,6 +951,10 @@ public class GameUIManager : MonoBehaviour
     public void BeginGame()
     {
         GameManager.Instance.StartGame();
+
+        // Play deal sound when cards are distributed
+        if (SoundManager.Instance != null) SoundManager.Instance.Play("deal");
+
         RefreshHand();
         StartBidding();
     }
