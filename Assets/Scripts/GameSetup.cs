@@ -377,53 +377,57 @@ public class GameSetup : MonoBehaviour
 
         // ==================== Player Info Cards ====================
 
-        // Player 0 (Human / 宋江) - bottom left, aligned with hand area left edge
-        // Hand area is centered with width 1600, so left edge = (1920-1600)/2 = 160px
-        // Place info card just left of the hand, right edge touching hand left edge
+        // --- Layout strategy ---
+        // AI played areas are at anchors (0.35, 0.65) and (0.65, 0.65).
+        // Info cards sit above their played area, centered on the same x anchor.
+        // Human info card sits bottom-left, adjacent to the hand area.
+        // This keeps each player's identity visually linked to their play zone.
+
+        // Player 0 (Human / 宋江) - bottom left, next to hand area
         var (card0, infoText0, timerText0) = CreatePlayerInfoCard(gameObjectsRoot.transform,
             "PlayerCard_You", "Song_Jiang", "\u5b8b\u6c5f", 120f, vertical: true);
         RectTransform card0Rect = card0.GetComponent<RectTransform>();
         card0Rect.anchorMin = new Vector2(0, 0);
         card0Rect.anchorMax = new Vector2(0, 0);
-        card0Rect.pivot = new Vector2(1, 0);  // Right edge as pivot, so it sits flush left of hand
-        card0Rect.anchoredPosition = new Vector2(155, 30);
+        card0Rect.pivot = new Vector2(0, 0);
+        card0Rect.anchoredPosition = new Vector2(18, 30);
 
-        // Player 1 (AI Left / 林冲) - top left, flush with left edge
+        // Player 1 (AI Left / 林冲) - above left played area (anchor 0.35)
         var (card1, infoText1, timerText1) = CreatePlayerInfoCard(gameObjectsRoot.transform,
             "PlayerCard_Left", "Lin_Chong", "\u6797\u51b2", 140f, vertical: false);
         RectTransform card1Rect = card1.GetComponent<RectTransform>();
-        card1Rect.anchorMin = new Vector2(0, 1);
-        card1Rect.anchorMax = new Vector2(0, 1);
-        card1Rect.pivot = new Vector2(0, 1);
-        card1Rect.anchoredPosition = new Vector2(20, -15);
+        card1Rect.anchorMin = new Vector2(0.35f, 1);
+        card1Rect.anchorMax = new Vector2(0.35f, 1);
+        card1Rect.pivot = new Vector2(0.5f, 1);  // Centered on the play area x
+        card1Rect.anchoredPosition = new Vector2(0, -15);
 
-        // Player 1 (AI Left) card backs area - aligned below info card, same left margin
+        // Player 1 (AI Left) card backs area - below the info card, centered
         GameObject aiCards1 = new GameObject("AICards_Left");
         aiCards1.transform.SetParent(gameObjectsRoot.transform, false);
         RectTransform aiCards1Rect = aiCards1.AddComponent<RectTransform>();
-        aiCards1Rect.anchorMin = new Vector2(0, 1);
-        aiCards1Rect.anchorMax = new Vector2(0, 1);
-        aiCards1Rect.pivot = new Vector2(0, 1);
-        aiCards1Rect.anchoredPosition = new Vector2(20, -175);
+        aiCards1Rect.anchorMin = new Vector2(0.35f, 1);
+        aiCards1Rect.anchorMax = new Vector2(0.35f, 1);
+        aiCards1Rect.pivot = new Vector2(0.5f, 1);
+        aiCards1Rect.anchoredPosition = new Vector2(0, -175);
         aiCards1Rect.sizeDelta = new Vector2(260, 50);
 
-        // Player 2 (AI Right / 鲁智深) - top right, flush with right edge
+        // Player 2 (AI Right / 鲁智深) - above right played area (anchor 0.65)
         var (card2, infoText2, timerText2) = CreatePlayerInfoCard(gameObjectsRoot.transform,
             "PlayerCard_Right", "Lu_Zhishen", "\u9c81\u667a\u6df1", 140f, vertical: false, mirrorHorizontal: true);
         RectTransform card2Rect = card2.GetComponent<RectTransform>();
-        card2Rect.anchorMin = new Vector2(1, 1);
-        card2Rect.anchorMax = new Vector2(1, 1);
-        card2Rect.pivot = new Vector2(1, 1);
-        card2Rect.anchoredPosition = new Vector2(-20, -15);
+        card2Rect.anchorMin = new Vector2(0.65f, 1);
+        card2Rect.anchorMax = new Vector2(0.65f, 1);
+        card2Rect.pivot = new Vector2(0.5f, 1);  // Centered on the play area x
+        card2Rect.anchoredPosition = new Vector2(0, -15);
 
-        // Player 2 (AI Right) card backs area - aligned below info card, same right margin
+        // Player 2 (AI Right) card backs area - below the info card, centered
         GameObject aiCards2 = new GameObject("AICards_Right");
         aiCards2.transform.SetParent(gameObjectsRoot.transform, false);
         RectTransform aiCards2Rect = aiCards2.AddComponent<RectTransform>();
-        aiCards2Rect.anchorMin = new Vector2(1, 1);
-        aiCards2Rect.anchorMax = new Vector2(1, 1);
-        aiCards2Rect.pivot = new Vector2(1, 1);
-        aiCards2Rect.anchoredPosition = new Vector2(-20, -175);
+        aiCards2Rect.anchorMin = new Vector2(0.65f, 1);
+        aiCards2Rect.anchorMax = new Vector2(0.65f, 1);
+        aiCards2Rect.pivot = new Vector2(0.5f, 1);
+        aiCards2Rect.anchoredPosition = new Vector2(0, -175);
         aiCards2Rect.sizeDelta = new Vector2(260, 50);
 
         TextMeshProUGUI[] playerInfoTexts = { infoText0, infoText1, infoText2 };
