@@ -612,17 +612,10 @@ public class GameUIManager : MonoBehaviour
         for (int i = 0; i < 3; i++)
         {
             Player p = GameManager.Instance.Players[i];
-            string role = p.IsLandlord ? "[\u5730\u4e3b]" : "";  // [地主]
-            if (i == 0)
-            {
-                // Human player: compact bottom label
-                playerInfoTexts[i].text = $"{p.Name} {role} | \u624b\u724c: {p.Hand.Count}";
-            }
-            else
-            {
-                // AI players: single line at top
-                playerInfoTexts[i].text = $"{p.Name} {role} | \u624b\u724c: {p.Hand.Count}";
-            }
+            string role = p.IsLandlord ? " [\u5730\u4e3b]" : "";  // [地主]
+            // Name is displayed separately on the player info card,
+            // so the info text only shows role badge and card count
+            playerInfoTexts[i].text = $"{role}\u624b\u724c: {p.Hand.Count}";
         }
 
         // Update AI card back displays
