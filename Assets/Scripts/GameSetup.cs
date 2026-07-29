@@ -377,52 +377,54 @@ public class GameSetup : MonoBehaviour
 
         // ==================== Player Info Cards ====================
 
-        // Player 0 (Human / 宋江) - bottom left, vertical layout with large avatar
+        // Player 0 (Human / 宋江) - bottom left, aligned with hand area left edge
+        // Hand area is centered with width 1600, so left edge = (1920-1600)/2 = 160px
+        // Place info card just left of the hand, right edge touching hand left edge
         var (card0, infoText0, timerText0) = CreatePlayerInfoCard(gameObjectsRoot.transform,
             "PlayerCard_You", "Song_Jiang", "\u5b8b\u6c5f", 120f, vertical: true);
         RectTransform card0Rect = card0.GetComponent<RectTransform>();
         card0Rect.anchorMin = new Vector2(0, 0);
         card0Rect.anchorMax = new Vector2(0, 0);
-        card0Rect.pivot = new Vector2(0, 0);
-        card0Rect.anchoredPosition = new Vector2(15, 195);
+        card0Rect.pivot = new Vector2(1, 0);  // Right edge as pivot, so it sits flush left of hand
+        card0Rect.anchoredPosition = new Vector2(155, 30);
 
-        // Player 1 (AI Left / 林冲) - top left, horizontal layout (avatar left, text right)
+        // Player 1 (AI Left / 林冲) - top left, flush with left edge
         var (card1, infoText1, timerText1) = CreatePlayerInfoCard(gameObjectsRoot.transform,
             "PlayerCard_Left", "Lin_Chong", "\u6797\u51b2", 140f, vertical: false);
         RectTransform card1Rect = card1.GetComponent<RectTransform>();
         card1Rect.anchorMin = new Vector2(0, 1);
         card1Rect.anchorMax = new Vector2(0, 1);
         card1Rect.pivot = new Vector2(0, 1);
-        card1Rect.anchoredPosition = new Vector2(15, -10);
+        card1Rect.anchoredPosition = new Vector2(20, -15);
 
-        // Player 1 (AI Left) card backs area - below the info card
+        // Player 1 (AI Left) card backs area - aligned below info card, same left margin
         GameObject aiCards1 = new GameObject("AICards_Left");
         aiCards1.transform.SetParent(gameObjectsRoot.transform, false);
         RectTransform aiCards1Rect = aiCards1.AddComponent<RectTransform>();
         aiCards1Rect.anchorMin = new Vector2(0, 1);
         aiCards1Rect.anchorMax = new Vector2(0, 1);
         aiCards1Rect.pivot = new Vector2(0, 1);
-        aiCards1Rect.anchoredPosition = new Vector2(30, -170);
-        aiCards1Rect.sizeDelta = new Vector2(200, 50);
+        aiCards1Rect.anchoredPosition = new Vector2(20, -175);
+        aiCards1Rect.sizeDelta = new Vector2(260, 50);
 
-        // Player 2 (AI Right / 鲁智深) - top right, horizontal mirrored (text left, avatar right)
+        // Player 2 (AI Right / 鲁智深) - top right, flush with right edge
         var (card2, infoText2, timerText2) = CreatePlayerInfoCard(gameObjectsRoot.transform,
             "PlayerCard_Right", "Lu_Zhishen", "\u9c81\u667a\u6df1", 140f, vertical: false, mirrorHorizontal: true);
         RectTransform card2Rect = card2.GetComponent<RectTransform>();
         card2Rect.anchorMin = new Vector2(1, 1);
         card2Rect.anchorMax = new Vector2(1, 1);
         card2Rect.pivot = new Vector2(1, 1);
-        card2Rect.anchoredPosition = new Vector2(-15, -10);
+        card2Rect.anchoredPosition = new Vector2(-20, -15);
 
-        // Player 2 (AI Right) card backs area - below the info card
+        // Player 2 (AI Right) card backs area - aligned below info card, same right margin
         GameObject aiCards2 = new GameObject("AICards_Right");
         aiCards2.transform.SetParent(gameObjectsRoot.transform, false);
         RectTransform aiCards2Rect = aiCards2.AddComponent<RectTransform>();
         aiCards2Rect.anchorMin = new Vector2(1, 1);
         aiCards2Rect.anchorMax = new Vector2(1, 1);
         aiCards2Rect.pivot = new Vector2(1, 1);
-        aiCards2Rect.anchoredPosition = new Vector2(-30, -170);
-        aiCards2Rect.sizeDelta = new Vector2(200, 50);
+        aiCards2Rect.anchoredPosition = new Vector2(-20, -175);
+        aiCards2Rect.sizeDelta = new Vector2(260, 50);
 
         TextMeshProUGUI[] playerInfoTexts = { infoText0, infoText1, infoText2 };
         TextMeshProUGUI[] timerTexts = { timerText0, timerText1, timerText2 };
