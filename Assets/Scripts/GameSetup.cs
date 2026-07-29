@@ -460,6 +460,24 @@ public class GameSetup : MonoBehaviour
 
         Transform[] playedAreas = { playedArea0.transform, playedArea1.transform, playedArea2.transform };
 
+        // Name labels above each played cards area (shows name + role during gameplay)
+        TextMeshProUGUI playedLabel0 = CreateText(playedArea0.transform, "PlayedLabel_You",
+            "\u5b8b\u6c5f",  // 宋江
+            new Vector2(0.5f, 1), new Vector2(0.5f, 1),
+            new Vector2(0, 18), new Vector2(200, 24), 14);
+
+        TextMeshProUGUI playedLabel1 = CreateText(playedArea1.transform, "PlayedLabel_Left",
+            "\u6797\u51b2",  // 林冲
+            new Vector2(0.5f, 1), new Vector2(0.5f, 1),
+            new Vector2(0, 18), new Vector2(200, 24), 14);
+
+        TextMeshProUGUI playedLabel2 = CreateText(playedArea2.transform, "PlayedLabel_Right",
+            "\u9c81\u667a\u6df1",  // 鲁智深
+            new Vector2(0.5f, 1), new Vector2(0.5f, 1),
+            new Vector2(0, 18), new Vector2(200, 24), 14);
+
+        TextMeshProUGUI[] playedAreaLabels = { playedLabel0, playedLabel1, playedLabel2 };
+
         // ==================== Center Area ====================
 
         // Message text (top center)
@@ -587,7 +605,8 @@ public class GameSetup : MonoBehaviour
             bidPanel, playPanel,
             messageText, lastPlayedText,
             playerInfoTexts, restartButton,
-            playedAreas, aiCardAreas
+            playedAreas, aiCardAreas,
+            playedAreaLabels
         );
 
         // Wire pause panel

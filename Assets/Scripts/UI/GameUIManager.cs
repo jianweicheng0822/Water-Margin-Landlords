@@ -37,6 +37,9 @@ public class GameUIManager : MonoBehaviour
     // AI card back display areas (shows small card backs representing AI hand size)
     private Transform[] aiCardBackAreas;
 
+    // Name + role labels above each played cards area
+    private TextMeshProUGUI[] playedAreaLabels = new TextMeshProUGUI[3];
+
     // Display card size for played cards
     private static readonly float PLAYED_CARD_WIDTH = 100f;
     private static readonly float PLAYED_CARD_HEIGHT = 150f;
@@ -84,7 +87,8 @@ public class GameUIManager : MonoBehaviour
         GameObject bidPnl, GameObject playPnl,
         TextMeshProUGUI msgText, TextMeshProUGUI lastPlayed,
         TextMeshProUGUI[] playerInfos, Button restartBtn,
-        Transform[] playedAreas, Transform[] aiCardAreas)
+        Transform[] playedAreas, Transform[] aiCardAreas,
+        TextMeshProUGUI[] playedLabels)
     {
         playButton = playBtn;
         passButton = passBtn;
@@ -100,6 +104,7 @@ public class GameUIManager : MonoBehaviour
         restartButton = restartBtn;
         playedCardAreas = playedAreas;
         aiCardBackAreas = aiCardAreas;
+        playedAreaLabels = playedLabels;
 
         // Wire up button clicks
         playButton.onClick.AddListener(OnPlayClicked);
@@ -616,6 +621,12 @@ public class GameUIManager : MonoBehaviour
             // Name is displayed separately on the player info card,
             // so the info text only shows role badge and card count
             playerInfoTexts[i].text = $"{role}\u624b\u724c: {p.Hand.Count}";
+
+            // Update played area label with name + role
+            if (playedAreaLabels != null && i < playedAreaLabels.Length)
+            {
+                playedAreaLabels[i].text = $"{p.Name}{role}";
+            }
         }
 
         // Update AI card back displays
