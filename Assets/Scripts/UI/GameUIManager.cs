@@ -570,9 +570,9 @@ public class GameUIManager : MonoBehaviour
         CardCombo combo = turnManager.GetLastPlayedCombo();
         if (combo == null) return;
 
-        if (combo.Type == CardComboType.Rocket)
+        if (combo.Type == ComboType.Rocket)
             SoundManager.Instance.Play("rocket");
-        else if (combo.Type == CardComboType.Bomb)
+        else if (combo.Type == ComboType.Bomb)
             SoundManager.Instance.Play("bomb");
         else
             SoundManager.Instance.Play("play");
