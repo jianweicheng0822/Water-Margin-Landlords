@@ -59,6 +59,16 @@ public class GameUIManager : MonoBehaviour
     // Cached card back sprite
     private Sprite cachedCardBackSprite;
 
+    // Timer texts displayed on each player's info card (hidden when not their turn)
+    private TextMeshProUGUI[] timerTexts = new TextMeshProUGUI[3];
+
+    // Turn timer state
+    private float turnTimeRemaining;
+    private int timerActivePlayer = -1; // Which player's timer is currently running (-1 = none)
+    private bool timerRunning;
+    private static readonly float PLAY_TIME_LIMIT = 30f;  // Seconds for playing cards
+    private static readonly float BID_TIME_LIMIT = 15f;   // Seconds for bidding
+
     // Pause menu state
     private GameObject pausePanel;
     private bool isPaused;
@@ -88,7 +98,7 @@ public class GameUIManager : MonoBehaviour
         TextMeshProUGUI msgText, TextMeshProUGUI lastPlayed,
         TextMeshProUGUI[] playerInfos, Button restartBtn,
         Transform[] playedAreas, Transform[] aiCardAreas,
-        TextMeshProUGUI[] playedLabels)
+        TextMeshProUGUI[] playedLabels, TextMeshProUGUI[] timers)
     {
         playButton = playBtn;
         passButton = passBtn;
@@ -105,6 +115,7 @@ public class GameUIManager : MonoBehaviour
         playedCardAreas = playedAreas;
         aiCardBackAreas = aiCardAreas;
         playedAreaLabels = playedLabels;
+        timerTexts = timers;
 
         // Wire up button clicks
         playButton.onClick.AddListener(OnPlayClicked);
@@ -150,6 +161,7 @@ public class GameUIManager : MonoBehaviour
     /// </summary>
     private void Update()
     {
+        // ESC to toggle pause
         var keyboard = UnityEngine.InputSystem.Keyboard.current;
         if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
         {
@@ -158,6 +170,114 @@ public class GameUIManager : MonoBehaviour
             {
                 TogglePause();
             }
+        }
+
+        // Countdown timer tick
+        if (timerRunning && timerActivePlayer >= 0 && !isPaused)
+        {
+            turnTimeRemaining -= Time.deltaTime;
+            int displaySeconds = Mathf.CeilToInt(Mathf.Max(0f, turnTimeRemaining));
+
+            // Update timer text display
+            timerTexts[timerActivePlayer].text = $"{displaySeconds}s";
+
+            // Color shifts from white -> yellow -> red as time runs low
+            if (turnTimeRemaining > 10f)
+                timerTexts[timerActivePlayer].color = new Color(0.9f, 0.9f, 0.8f); // Calm white
+            else if (turnTimeRemaining > 5f)
+                timerTexts[timerActivePlayer].color = new Color(1f, 0.8f, 0.3f);   // Warning yellow
+            else
+                timerTexts[timerActivePlayer].color = new Color(1f, 0.3f, 0.2f);   // Urgent red
+
+            // Time's up — auto pass or auto no-bid
+            if (turnTimeRemaining <= 0f)
+            {
+                timerRunning = false;
+                OnTimerExpired();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Starts the countdown timer for the specified player.
+    /// Shows the timer on their info card and hides it from all others.
+    /// </summary>
+    private void StartTimer(int playerIndex, float seconds)
+    {
+        StopTimer();
+        timerActivePlayer = playerIndex;
+        turnTimeRemaining = seconds;
+        timerRunning = true;
+
+        // Show only the active player's timer
+        for (int i = 0; i < timerTexts.Length; i++)
+        {
+            timerTexts[i].gameObject.SetActive(i == playerIndex);
+        }
+
+        int displaySeconds = Mathf.CeilToInt(seconds);
+        timerTexts[playerIndex].text = $"{displaySeconds}s";
+        timerTexts[playerIndex].color = new Color(0.9f, 0.9f, 0.8f);
+    }
+
+    /// <summary>
+    /// Stops and hides the countdown timer.
+    /// </summary>
+    private void StopTimer()
+    {
+        timerRunning = false;
+        timerActivePlayer = -1;
+        for (int i = 0; i < timerTexts.Length; i++)
+        {
+            timerTexts[i].gameObject.SetActive(false);
+        }
+    }
+
+    /// <summary>
+    /// Called when the turn timer reaches zero. Auto-passes or auto-skips bid.
+    /// </summary>
+    private void OnTimerExpired()
+    {
+        StopTimer();
+
+        GamePhase phase = GameManager.Instance.CurrentPhase;
+        if (phase == GamePhase.Playing)
+        {
+            // Auto-pass: try to pass, if can't (free play), play lowest single card
+            bool passed = turnManager.Pass();
+            if (passed)
+            {
+                playerPassed[0] = true;
+                handView.DeselectAll();
+                playPanel.SetActive(false);
+                UpdateLastPlayedDisplay();
+                ProcessPlayTurn();
+            }
+            else
+            {
+                // Free play turn — must play something, auto-play the lowest card
+                Player human = GameManager.Instance.Players[0];
+                if (human.Hand.Count > 0)
+                {
+                    List<Card> autoPlay = new List<Card> { human.Hand[0] };
+                    turnManager.PlayCards(autoPlay);
+                    playerPassed = new bool[3];
+                    handView.RemoveCards(autoPlay);
+                    playPanel.SetActive(false);
+                    UpdateLastPlayedDisplay();
+                    UpdatePlayerInfo();
+
+                    if (turnManager.IsPlaying())
+                        ProcessPlayTurn();
+                    else
+                        OnGameOver();
+                }
+            }
+        }
+        else if (phase == GamePhase.Bidding)
+        {
+            // Auto no-bid
+            OnNoBidClicked();
         }
     }
 
@@ -195,7 +315,7 @@ public class GameUIManager : MonoBehaviour
 
         if (currentBidder == 0)
         {
-            // Human player's turn to bid
+            // Human player's turn to bid — start 15s countdown
             int highest = bidManager.GetHighestBid();
             SetMessage(highest > 0
                 ? $"\u5f53\u524d\u6700\u9ad8\u53eb\u5206\uff1a{highest}\u5206\u3002\u8bf7\u53eb\u5206\u3002"  // 当前最高叫分：X分。请叫分。
@@ -203,6 +323,7 @@ public class GameUIManager : MonoBehaviour
             bidPanel.SetActive(true);
             playPanel.SetActive(false);
             UpdateBidButtons();
+            StartTimer(0, BID_TIME_LIMIT);
         }
         else
         {
@@ -225,6 +346,7 @@ public class GameUIManager : MonoBehaviour
 
     private void OnBidScoreClicked(int score)
     {
+        StopTimer();
         bidPanel.SetActive(false);
         bidManager.BidScore(score);
 
@@ -240,6 +362,7 @@ public class GameUIManager : MonoBehaviour
 
     private void OnNoBidClicked()
     {
+        StopTimer();
         bidPanel.SetActive(false);
         bidManager.Pass();
 
@@ -318,16 +441,24 @@ public class GameUIManager : MonoBehaviour
 
         if (currentPlayer.Index == 0)
         {
-            // Human player's turn
+            // Human player's turn — start 30s countdown
             SetMessage("\u8f6e\u5230\u4f60\u51fa\u724c\u3002\u9009\u62e9\u724c\u540e\u70b9\u51fa\u724c\u6216\u4e0d\u51fa\u3002");  // 轮到你出牌。选择牌后点出牌或不出。
             playPanel.SetActive(true);
             UpdatePlayButtons();
+            StartTimer(0, PLAY_TIME_LIMIT);
         }
         else
         {
-            // AI player's turn
+            // AI player's turn — show thinking indicator on their card
             playPanel.SetActive(false);
             SetMessage($"{currentPlayer.Name} \u6b63\u5728\u601d\u8003...");  // X 正在思考...
+
+            // Show a brief "thinking" state on the AI's timer
+            for (int i = 0; i < timerTexts.Length; i++)
+                timerTexts[i].gameObject.SetActive(false);
+            timerTexts[currentPlayer.Index].gameObject.SetActive(true);
+            timerTexts[currentPlayer.Index].text = "\u601d\u8003\u4e2d...";  // 思考中...
+            timerTexts[currentPlayer.Index].color = new Color(0.7f, 0.7f, 0.6f);
 
             // Small delay so the player can see what's happening
             Invoke(nameof(AIPlayTurn), 0.8f);
@@ -341,6 +472,9 @@ public class GameUIManager : MonoBehaviour
     {
         if (!turnManager.IsPlaying())
             return;
+
+        // Hide AI thinking indicator
+        StopTimer();
 
         Player currentPlayer = turnManager.GetCurrentPlayer();
         int prevCardCount = currentPlayer.Hand.Count;
@@ -379,6 +513,7 @@ public class GameUIManager : MonoBehaviour
         bool success = turnManager.PlayCards(selected);
         if (success)
         {
+            StopTimer();
             playerPassed = new bool[3];  // Reset pass states when cards are played
             handView.RemoveCards(selected);
             playPanel.SetActive(false);
@@ -406,6 +541,7 @@ public class GameUIManager : MonoBehaviour
         bool success = turnManager.Pass();
         if (success)
         {
+            StopTimer();
             playerPassed[0] = true;
             handView.DeselectAll();
             playPanel.SetActive(false);
@@ -422,6 +558,7 @@ public class GameUIManager : MonoBehaviour
 
     private void OnGameOver()
     {
+        StopTimer();
         playPanel.SetActive(false);
         bidPanel.SetActive(false);
 

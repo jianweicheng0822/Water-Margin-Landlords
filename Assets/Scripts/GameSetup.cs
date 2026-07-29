@@ -378,8 +378,8 @@ public class GameSetup : MonoBehaviour
         // ==================== Player Info Cards ====================
 
         // Player 0 (Human / 宋江) - bottom left, vertical layout with large avatar
-        var (card0, infoText0) = CreatePlayerInfoCard(gameObjectsRoot.transform,
-            "PlayerCard_You", "Song_Jiang", "\u5b8b\u6c5f", 90f, vertical: true);
+        var (card0, infoText0, timerText0) = CreatePlayerInfoCard(gameObjectsRoot.transform,
+            "PlayerCard_You", "Song_Jiang", "\u5b8b\u6c5f", 120f, vertical: true);
         RectTransform card0Rect = card0.GetComponent<RectTransform>();
         card0Rect.anchorMin = new Vector2(0, 0);
         card0Rect.anchorMax = new Vector2(0, 0);
@@ -387,8 +387,8 @@ public class GameSetup : MonoBehaviour
         card0Rect.anchoredPosition = new Vector2(15, 195);
 
         // Player 1 (AI Left / 林冲) - top left, horizontal layout (avatar left, text right)
-        var (card1, infoText1) = CreatePlayerInfoCard(gameObjectsRoot.transform,
-            "PlayerCard_Left", "Lin_Chong", "\u6797\u51b2", 100f, vertical: false);
+        var (card1, infoText1, timerText1) = CreatePlayerInfoCard(gameObjectsRoot.transform,
+            "PlayerCard_Left", "Lin_Chong", "\u6797\u51b2", 140f, vertical: false);
         RectTransform card1Rect = card1.GetComponent<RectTransform>();
         card1Rect.anchorMin = new Vector2(0, 1);
         card1Rect.anchorMax = new Vector2(0, 1);
@@ -402,12 +402,12 @@ public class GameSetup : MonoBehaviour
         aiCards1Rect.anchorMin = new Vector2(0, 1);
         aiCards1Rect.anchorMax = new Vector2(0, 1);
         aiCards1Rect.pivot = new Vector2(0, 1);
-        aiCards1Rect.anchoredPosition = new Vector2(30, -130);
+        aiCards1Rect.anchoredPosition = new Vector2(30, -170);
         aiCards1Rect.sizeDelta = new Vector2(200, 50);
 
         // Player 2 (AI Right / 鲁智深) - top right, horizontal mirrored (text left, avatar right)
-        var (card2, infoText2) = CreatePlayerInfoCard(gameObjectsRoot.transform,
-            "PlayerCard_Right", "Lu_Zhishen", "\u9c81\u667a\u6df1", 100f, vertical: false, mirrorHorizontal: true);
+        var (card2, infoText2, timerText2) = CreatePlayerInfoCard(gameObjectsRoot.transform,
+            "PlayerCard_Right", "Lu_Zhishen", "\u9c81\u667a\u6df1", 140f, vertical: false, mirrorHorizontal: true);
         RectTransform card2Rect = card2.GetComponent<RectTransform>();
         card2Rect.anchorMin = new Vector2(1, 1);
         card2Rect.anchorMax = new Vector2(1, 1);
@@ -421,10 +421,11 @@ public class GameSetup : MonoBehaviour
         aiCards2Rect.anchorMin = new Vector2(1, 1);
         aiCards2Rect.anchorMax = new Vector2(1, 1);
         aiCards2Rect.pivot = new Vector2(1, 1);
-        aiCards2Rect.anchoredPosition = new Vector2(-30, -130);
+        aiCards2Rect.anchoredPosition = new Vector2(-30, -170);
         aiCards2Rect.sizeDelta = new Vector2(200, 50);
 
         TextMeshProUGUI[] playerInfoTexts = { infoText0, infoText1, infoText2 };
+        TextMeshProUGUI[] timerTexts = { timerText0, timerText1, timerText2 };
 
         // ==================== Played Cards Areas (inverted triangle layout) ====================
 
@@ -606,7 +607,7 @@ public class GameSetup : MonoBehaviour
             messageText, lastPlayedText,
             playerInfoTexts, restartButton,
             playedAreas, aiCardAreas,
-            playedAreaLabels
+            playedAreaLabels, timerTexts
         );
 
         // Wire pause panel
@@ -910,35 +911,28 @@ public class GameSetup : MonoBehaviour
     }
 
     /// <summary>
-    /// Creates a unified player info card with avatar, name, and card count.
-    /// Returns the info text so it can be updated during gameplay.
+    /// Creates a unified player info card with avatar, name, card count, and timer.
+    /// Returns the info text and timer text so they can be updated during gameplay.
     ///
-    /// For horizontal layout (AI players): avatar on one side, name + card count stacked vertically.
-    /// For vertical layout (human player): large avatar on top, name + info below.
+    /// For horizontal layout (AI players): avatar on one side, name + card count + timer stacked.
+    /// For vertical layout (human player): large avatar on top, name + info + timer below.
     /// </summary>
-    /// <param name="parent">Parent transform to attach the card to</param>
-    /// <param name="name">GameObject name</param>
-    /// <param name="spriteName">Hero sprite name in Resources/Sprites/</param>
-    /// <param name="displayName">Character name to display</param>
-    /// <param name="avatarSize">Size of the avatar in pixels</param>
-    /// <param name="vertical">True for vertical layout (human), false for horizontal (AI)</param>
-    /// <param name="mirrorHorizontal">True to place avatar on the right side (AI Right)</param>
-    /// <returns>Tuple of (card GameObject, info TextMeshProUGUI for updating card count)</returns>
-    private (GameObject card, TextMeshProUGUI infoText) CreatePlayerInfoCard(
+    private (GameObject card, TextMeshProUGUI infoText, TextMeshProUGUI timerText) CreatePlayerInfoCard(
         Transform parent, string name, string spriteName, string displayName,
         float avatarSize, bool vertical, bool mirrorHorizontal = false)
     {
         // Calculate panel size based on layout
+        float textAreaWidth = 120f; // Wider text area for larger cards
         float panelWidth, panelHeight;
         if (vertical)
         {
-            panelWidth = avatarSize + 20;  // Avatar width + padding
-            panelHeight = avatarSize + 50; // Avatar + text area below
+            panelWidth = avatarSize + 20;   // Avatar width + padding
+            panelHeight = avatarSize + 65;  // Avatar + name + info + timer below
         }
         else
         {
-            panelWidth = avatarSize + 110; // Avatar + text area beside
-            panelHeight = avatarSize + 16; // Avatar height + padding
+            panelWidth = avatarSize + textAreaWidth + 20; // Avatar + text area + padding
+            panelHeight = avatarSize + 16;  // Avatar height + padding
         }
 
         // Main card panel with dark semi-transparent background
@@ -1014,28 +1008,46 @@ public class GameSetup : MonoBehaviour
         infoText.color = new Color(0.8f, 0.75f, 0.65f); // Warm light text
         infoText.alignment = TextAlignmentOptions.Center;
 
+        // --- Timer label (hidden by default, shown when it's this player's turn) ---
+        GameObject timerObj = new GameObject("TimerLabel");
+        timerObj.transform.SetParent(card.transform, false);
+        RectTransform timerRect = timerObj.AddComponent<RectTransform>();
+        TextMeshProUGUI timerText = timerObj.AddComponent<TextMeshProUGUI>();
+        if (chineseFont != null) timerText.font = chineseFont;
+        timerText.text = "30";
+        timerText.color = new Color(1f, 0.4f, 0.3f); // Red-orange for urgency
+        timerText.alignment = TextAlignmentOptions.Center;
+        timerObj.SetActive(false); // Hidden until player's turn
+
         // --- Position elements based on layout ---
         if (vertical)
         {
-            // Vertical: avatar centered on top, name + info stacked below
+            // Vertical: avatar centered on top, name + info + timer stacked below
             portraitRect.anchorMin = new Vector2(0.5f, 1);
             portraitRect.anchorMax = new Vector2(0.5f, 1);
             portraitRect.pivot = new Vector2(0.5f, 1);
             portraitRect.anchoredPosition = new Vector2(0, -6);
 
-            nameText.fontSize = 14;
+            nameText.fontSize = 16;
             nameRect.anchorMin = new Vector2(0.5f, 0);
             nameRect.anchorMax = new Vector2(0.5f, 0);
             nameRect.pivot = new Vector2(0.5f, 0);
-            nameRect.anchoredPosition = new Vector2(0, 22);
-            nameRect.sizeDelta = new Vector2(panelWidth, 22);
+            nameRect.anchoredPosition = new Vector2(0, 32);
+            nameRect.sizeDelta = new Vector2(panelWidth, 24);
 
-            infoText.fontSize = 12;
+            infoText.fontSize = 13;
             infoRect.anchorMin = new Vector2(0.5f, 0);
             infoRect.anchorMax = new Vector2(0.5f, 0);
             infoRect.pivot = new Vector2(0.5f, 0);
-            infoRect.anchoredPosition = new Vector2(0, 4);
+            infoRect.anchoredPosition = new Vector2(0, 14);
             infoRect.sizeDelta = new Vector2(panelWidth, 20);
+
+            timerText.fontSize = 18;
+            timerRect.anchorMin = new Vector2(0.5f, 0);
+            timerRect.anchorMax = new Vector2(0.5f, 0);
+            timerRect.pivot = new Vector2(0.5f, 1);
+            timerRect.anchoredPosition = new Vector2(0, -2);
+            timerRect.sizeDelta = new Vector2(panelWidth, 24);
         }
         else if (mirrorHorizontal)
         {
@@ -1045,21 +1057,29 @@ public class GameSetup : MonoBehaviour
             portraitRect.pivot = new Vector2(1, 0.5f);
             portraitRect.anchoredPosition = new Vector2(-6, 0);
 
-            nameText.fontSize = 16;
+            nameText.fontSize = 18;
             nameText.alignment = TextAlignmentOptions.Right;
             nameRect.anchorMin = new Vector2(0, 0.5f);
             nameRect.anchorMax = new Vector2(0, 0.5f);
             nameRect.pivot = new Vector2(0, 0.5f);
-            nameRect.anchoredPosition = new Vector2(8, 12);
-            nameRect.sizeDelta = new Vector2(95, 24);
+            nameRect.anchoredPosition = new Vector2(8, 20);
+            nameRect.sizeDelta = new Vector2(textAreaWidth, 26);
 
-            infoText.fontSize = 13;
+            infoText.fontSize = 14;
             infoText.alignment = TextAlignmentOptions.Right;
             infoRect.anchorMin = new Vector2(0, 0.5f);
             infoRect.anchorMax = new Vector2(0, 0.5f);
             infoRect.pivot = new Vector2(0, 0.5f);
-            infoRect.anchoredPosition = new Vector2(8, -12);
-            infoRect.sizeDelta = new Vector2(95, 20);
+            infoRect.anchoredPosition = new Vector2(8, -4);
+            infoRect.sizeDelta = new Vector2(textAreaWidth, 22);
+
+            timerText.fontSize = 20;
+            timerText.alignment = TextAlignmentOptions.Right;
+            timerRect.anchorMin = new Vector2(0, 0.5f);
+            timerRect.anchorMax = new Vector2(0, 0.5f);
+            timerRect.pivot = new Vector2(0, 0.5f);
+            timerRect.anchoredPosition = new Vector2(8, -28);
+            timerRect.sizeDelta = new Vector2(textAreaWidth, 26);
         }
         else
         {
@@ -1069,24 +1089,32 @@ public class GameSetup : MonoBehaviour
             portraitRect.pivot = new Vector2(0, 0.5f);
             portraitRect.anchoredPosition = new Vector2(6, 0);
 
-            nameText.fontSize = 16;
+            nameText.fontSize = 18;
             nameText.alignment = TextAlignmentOptions.Left;
             nameRect.anchorMin = new Vector2(0, 0.5f);
             nameRect.anchorMax = new Vector2(0, 0.5f);
             nameRect.pivot = new Vector2(0, 0.5f);
-            nameRect.anchoredPosition = new Vector2(avatarSize + 14, 12);
-            nameRect.sizeDelta = new Vector2(95, 24);
+            nameRect.anchoredPosition = new Vector2(avatarSize + 14, 20);
+            nameRect.sizeDelta = new Vector2(textAreaWidth, 26);
 
-            infoText.fontSize = 13;
+            infoText.fontSize = 14;
             infoText.alignment = TextAlignmentOptions.Left;
             infoRect.anchorMin = new Vector2(0, 0.5f);
             infoRect.anchorMax = new Vector2(0, 0.5f);
             infoRect.pivot = new Vector2(0, 0.5f);
-            infoRect.anchoredPosition = new Vector2(avatarSize + 14, -12);
-            infoRect.sizeDelta = new Vector2(95, 20);
+            infoRect.anchoredPosition = new Vector2(avatarSize + 14, -4);
+            infoRect.sizeDelta = new Vector2(textAreaWidth, 22);
+
+            timerText.fontSize = 20;
+            timerText.alignment = TextAlignmentOptions.Left;
+            timerRect.anchorMin = new Vector2(0, 0.5f);
+            timerRect.anchorMax = new Vector2(0, 0.5f);
+            timerRect.pivot = new Vector2(0, 0.5f);
+            timerRect.anchoredPosition = new Vector2(avatarSize + 14, -28);
+            timerRect.sizeDelta = new Vector2(textAreaWidth, 26);
         }
 
-        return (card, infoText);
+        return (card, infoText, timerText);
     }
 
     /// <summary>
