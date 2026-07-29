@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections.Generic;
 
 /// <summary>
 /// Bootstraps the entire game scene programmatically.
@@ -17,6 +18,9 @@ public class GameSetup : MonoBehaviour
     // Cached button background sprite for all themed buttons
     private Sprite buttonSprite;
 
+    // Background music audio source — plays only on main menu, stops during gameplay
+    private AudioSource bgmSource;
+
     // Shared canvas used by both menu and game
     private GameObject canvasObj;
 
@@ -25,6 +29,22 @@ public class GameSetup : MonoBehaviour
 
     // All game objects created by CreateGame, stored for cleanup when returning to menu
     private GameObject gameObjectsRoot;
+
+    // Settings panel overlay — shown when "设置" button is clicked
+    private GameObject settingsOverlay;
+
+    // Resolution options for the settings dropdown
+    private readonly List<Vector2Int> resolutionOptions = new List<Vector2Int>
+    {
+        new Vector2Int(1280, 720),
+        new Vector2Int(1366, 768),
+        new Vector2Int(1600, 900),
+        new Vector2Int(1920, 1080),
+        new Vector2Int(2560, 1440)
+    };
+
+    // Current resolution index in the resolutionOptions list
+    private int currentResolutionIndex = 3; // Default 1920x1080
 
     private void Start()
     {
@@ -59,6 +79,35 @@ public class GameSetup : MonoBehaviour
         else
         {
             Debug.LogWarning("Button background not found: Sprites/button");
+        }
+
+        // Load persisted settings before creating audio/display
+        float savedVolume = PlayerPrefs.GetFloat("MusicVolume", 0.3f);
+        currentResolutionIndex = PlayerPrefs.GetInt("ResolutionIndex", 3);
+        bool savedFullscreen = PlayerPrefs.GetInt("Fullscreen", 0) == 1;
+
+        // Apply saved resolution and fullscreen mode
+        if (currentResolutionIndex >= 0 && currentResolutionIndex < resolutionOptions.Count)
+        {
+            Vector2Int res = resolutionOptions[currentResolutionIndex];
+            Screen.SetResolution(res.x, res.y, savedFullscreen);
+        }
+
+        // Load and play background music
+        AudioClip bgmClip = Resources.Load<AudioClip>("Audio/menu_bgm");
+        if (bgmClip != null)
+        {
+            bgmSource = gameObject.AddComponent<AudioSource>();
+            bgmSource.clip = bgmClip;
+            bgmSource.loop = true;
+            bgmSource.volume = savedVolume;
+            bgmSource.mute = (savedVolume <= 0.001f);
+            bgmSource.playOnAwake = false;
+            bgmSource.Play();
+        }
+        else
+        {
+            Debug.LogWarning("BGM not found: Audio/menu_bgm");
         }
 
         // Create the main UI canvas
@@ -124,8 +173,8 @@ public class GameSetup : MonoBehaviour
         GameObject gradientObj = new GameObject("LogoGradient");
         gradientObj.transform.SetParent(menuPanel.transform, false);
         RectTransform gradientRect = gradientObj.AddComponent<RectTransform>();
-        gradientRect.anchorMin = new Vector2(0.5f, 0.65f);
-        gradientRect.anchorMax = new Vector2(0.5f, 0.65f);
+        gradientRect.anchorMin = new Vector2(0.5f, 0.62f);
+        gradientRect.anchorMax = new Vector2(0.5f, 0.62f);
         gradientRect.pivot = new Vector2(0.5f, 0.5f);
         gradientRect.anchoredPosition = Vector2.zero;
         gradientRect.sizeDelta = new Vector2(1050, 530);
@@ -139,8 +188,8 @@ public class GameSetup : MonoBehaviour
         GameObject logoObj = new GameObject("MenuLogo");
         logoObj.transform.SetParent(menuPanel.transform, false);
         RectTransform logoRect = logoObj.AddComponent<RectTransform>();
-        logoRect.anchorMin = new Vector2(0.5f, 0.65f);
-        logoRect.anchorMax = new Vector2(0.5f, 0.65f);
+        logoRect.anchorMin = new Vector2(0.5f, 0.62f);
+        logoRect.anchorMax = new Vector2(0.5f, 0.62f);
         logoRect.pivot = new Vector2(0.5f, 0.5f);
         logoRect.anchoredPosition = Vector2.zero;
         logoRect.sizeDelta = new Vector2(750, 340);
@@ -181,12 +230,12 @@ public class GameSetup : MonoBehaviour
         logoShadow.effectColor = new Color(0.07f, 0.04f, 0.02f, 0.6f); // Semi-transparent dark brown
         logoShadow.effectDistance = new Vector2(4f, -4f);
 
-        // Start Game button — larger size as primary action
+        // Start Game button — primary action
         Button startButton = CreateButton(menuPanel.transform, "StartButton",
             "\u5f00\u59cb\u6e38\u620f", Vector2.zero, new Vector2(280, 62));  // 开始游戏
         RectTransform startRect = startButton.GetComponent<RectTransform>();
-        startRect.anchorMin = new Vector2(0.5f, 0.38f);
-        startRect.anchorMax = new Vector2(0.5f, 0.38f);
+        startRect.anchorMin = new Vector2(0.5f, 0.43f);
+        startRect.anchorMax = new Vector2(0.5f, 0.43f);
         startRect.anchoredPosition = Vector2.zero;
 
         startButton.onClick.AddListener(() =>
@@ -195,12 +244,26 @@ public class GameSetup : MonoBehaviour
             CreateGame();
         });
 
-        // Quit Game button — smaller size as secondary action
+        // Settings button — between start and quit
+        Button settingsButton = CreateButton(menuPanel.transform, "SettingsButton",
+            "\u8bbe\u7f6e", Vector2.zero, new Vector2(280, 62));  // 设置
+        RectTransform settingsRect = settingsButton.GetComponent<RectTransform>();
+        settingsRect.anchorMin = new Vector2(0.5f, 0.365f);
+        settingsRect.anchorMax = new Vector2(0.5f, 0.365f);
+        settingsRect.anchoredPosition = Vector2.zero;
+
+        settingsButton.onClick.AddListener(() =>
+        {
+            if (settingsOverlay != null)
+                settingsOverlay.SetActive(true);
+        });
+
+        // Quit Game button
         Button quitButton = CreateButton(menuPanel.transform, "QuitButton",
-            "\u9000\u51fa\u6e38\u620f", Vector2.zero, new Vector2(240, 55));  // 退出游戏
+            "\u9000\u51fa\u6e38\u620f", Vector2.zero, new Vector2(280, 62));  // 退出游戏
         RectTransform quitRect = quitButton.GetComponent<RectTransform>();
-        quitRect.anchorMin = new Vector2(0.5f, 0.27f);
-        quitRect.anchorMax = new Vector2(0.5f, 0.27f);
+        quitRect.anchorMin = new Vector2(0.5f, 0.30f);
+        quitRect.anchorMax = new Vector2(0.5f, 0.30f);
         quitRect.anchoredPosition = Vector2.zero;
 
         quitButton.onClick.AddListener(() =>
@@ -211,6 +274,9 @@ public class GameSetup : MonoBehaviour
             Application.Quit();
 #endif
         });
+
+        // Build the settings panel (starts hidden)
+        CreateSettingsPanel();
     }
 
     /// <summary>
@@ -234,6 +300,10 @@ public class GameSetup : MonoBehaviour
 
         // Show the main menu again
         menuPanel.SetActive(true);
+
+        // Resume menu BGM when returning to menu
+        if (bgmSource != null && !bgmSource.isPlaying)
+            bgmSource.Play();
     }
 
     /// <summary>
@@ -241,6 +311,10 @@ public class GameSetup : MonoBehaviour
     /// </summary>
     private void CreateGame()
     {
+        // Stop menu BGM when entering gameplay
+        if (bgmSource != null && bgmSource.isPlaying)
+            bgmSource.Stop();
+
         // Container for all game objects so we can destroy them when returning to menu
         gameObjectsRoot = new GameObject("GameObjects");
         gameObjectsRoot.transform.SetParent(canvasObj.transform, false);
@@ -515,6 +589,223 @@ public class GameSetup : MonoBehaviour
 
         // Start the game
         uiManager.BeginGame();
+    }
+
+    // ==================== Settings Panel ====================
+
+    /// <summary>
+    /// Creates the settings panel overlay with volume, resolution, and fullscreen controls.
+    /// Panel is parented to menuPanel and starts hidden.
+    /// </summary>
+    private void CreateSettingsPanel()
+    {
+        // Full-screen semi-transparent dark overlay
+        settingsOverlay = CreatePanel(menuPanel.transform, "SettingsOverlay",
+            Vector2.zero, Vector2.one, new Color(0, 0, 0, 0.7f));
+
+        // Center panel background
+        GameObject centerPanel = new GameObject("SettingsCenter");
+        centerPanel.transform.SetParent(settingsOverlay.transform, false);
+        RectTransform centerRect = centerPanel.AddComponent<RectTransform>();
+        centerRect.anchorMin = new Vector2(0.5f, 0.5f);
+        centerRect.anchorMax = new Vector2(0.5f, 0.5f);
+        centerRect.sizeDelta = new Vector2(500, 400);
+        Image centerBg = centerPanel.AddComponent<Image>();
+        centerBg.color = new Color(0.12f, 0.1f, 0.08f, 0.95f);
+
+        // Gold border outline
+        Outline panelOutline = centerPanel.AddComponent<Outline>();
+        panelOutline.effectColor = new Color(0.6f, 0.5f, 0.3f);
+        panelOutline.effectDistance = new Vector2(2, 2);
+
+        // Title: 设置
+        CreateText(centerPanel.transform, "SettingsTitle", "\u8bbe\u7f6e",
+            new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+            new Vector2(0, -35), new Vector2(300, 50), 30);
+
+        // ---- Volume control ----
+        // Label
+        CreateText(centerPanel.transform, "VolumeLabel", "\u97f3\u4e50\u97f3\u91cf",  // 音乐音量
+            new Vector2(0, 0.5f), new Vector2(0, 0.5f),
+            new Vector2(80, 80), new Vector2(140, 30), 18);
+
+        // Volume percentage text (updated by slider)
+        TextMeshProUGUI volumeValueText = CreateText(centerPanel.transform, "VolumeValue",
+            Mathf.RoundToInt((bgmSource != null ? bgmSource.volume : 0.3f) * 100) + "%",
+            new Vector2(1, 0.5f), new Vector2(1, 0.5f),
+            new Vector2(-45, 80), new Vector2(60, 30), 18);
+
+        // Volume slider
+        Slider volumeSlider = CreateSlider(centerPanel.transform, "VolumeSlider",
+            new Vector2(0, 80), new Vector2(220, 20),
+            bgmSource != null ? bgmSource.volume : 0.3f);
+
+        volumeSlider.onValueChanged.AddListener((float value) =>
+        {
+            if (bgmSource != null)
+            {
+                bgmSource.volume = value;
+                // Mute the source entirely at zero to prevent any audio leakage
+                bgmSource.mute = (value <= 0.001f);
+            }
+            volumeValueText.text = Mathf.RoundToInt(value * 100) + "%";
+            PlayerPrefs.SetFloat("MusicVolume", value);
+        });
+
+        // ---- Resolution control ----
+        // Label
+        CreateText(centerPanel.transform, "ResolutionLabel", "\u5206\u8fa8\u7387",  // 分辨率
+            new Vector2(0, 0.5f), new Vector2(0, 0.5f),
+            new Vector2(80, 10), new Vector2(140, 30), 18);
+
+        // Resolution value text
+        Vector2Int currentRes = resolutionOptions[currentResolutionIndex];
+        TextMeshProUGUI resolutionValueText = CreateText(centerPanel.transform, "ResolutionValue",
+            currentRes.x + "x" + currentRes.y,
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+            new Vector2(30, 10), new Vector2(160, 30), 18);
+
+        // Left arrow button "<"
+        Button resLeftBtn = CreateButton(centerPanel.transform, "ResLeftBtn",
+            "<", new Vector2(110, 10), new Vector2(40, 35));
+        // Smaller font for arrow
+        resLeftBtn.GetComponentInChildren<TextMeshProUGUI>().fontSize = 20;
+
+        // Right arrow button ">"
+        Button resRightBtn = CreateButton(centerPanel.transform, "ResRightBtn",
+            ">", new Vector2(280, 10), new Vector2(40, 35));
+        resRightBtn.GetComponentInChildren<TextMeshProUGUI>().fontSize = 20;
+
+        resLeftBtn.onClick.AddListener(() =>
+        {
+            currentResolutionIndex = (currentResolutionIndex - 1 + resolutionOptions.Count) % resolutionOptions.Count;
+            ApplyResolution(resolutionValueText);
+        });
+
+        resRightBtn.onClick.AddListener(() =>
+        {
+            currentResolutionIndex = (currentResolutionIndex + 1) % resolutionOptions.Count;
+            ApplyResolution(resolutionValueText);
+        });
+
+        // ---- Fullscreen toggle ----
+        // Label
+        CreateText(centerPanel.transform, "FullscreenLabel", "\u5168\u5c4f\u6a21\u5f0f",  // 全屏模式
+            new Vector2(0, 0.5f), new Vector2(0, 0.5f),
+            new Vector2(80, -60), new Vector2(140, 30), 18);
+
+        // Toggle button showing 开/关
+        Button fullscreenBtn = CreateButton(centerPanel.transform, "FullscreenToggle",
+            Screen.fullScreen ? "\u5f00" : "\u5173",  // 开 or 关
+            new Vector2(195, -60), new Vector2(80, 35));
+        TextMeshProUGUI fullscreenText = fullscreenBtn.GetComponentInChildren<TextMeshProUGUI>();
+
+        fullscreenBtn.onClick.AddListener(() =>
+        {
+            Screen.fullScreen = !Screen.fullScreen;
+            fullscreenText.text = Screen.fullScreen ? "\u5f00" : "\u5173";
+            PlayerPrefs.SetInt("Fullscreen", Screen.fullScreen ? 1 : 0);
+        });
+
+        // ---- Back button ----
+        Button backBtn = CreateButton(centerPanel.transform, "SettingsBackBtn",
+            "\u8fd4\u56de", new Vector2(0, -145), new Vector2(180, 50));  // 返回
+        RectTransform backRect = backBtn.GetComponent<RectTransform>();
+        backRect.anchorMin = new Vector2(0.5f, 0.5f);
+        backRect.anchorMax = new Vector2(0.5f, 0.5f);
+
+        backBtn.onClick.AddListener(() =>
+        {
+            PlayerPrefs.Save();
+            settingsOverlay.SetActive(false);
+        });
+
+        // Start hidden
+        settingsOverlay.SetActive(false);
+    }
+
+    /// <summary>
+    /// Applies the currently selected resolution and saves the setting.
+    /// </summary>
+    private void ApplyResolution(TextMeshProUGUI resText)
+    {
+        Vector2Int res = resolutionOptions[currentResolutionIndex];
+        resText.text = res.x + "x" + res.y;
+        Screen.SetResolution(res.x, res.y, Screen.fullScreen);
+        PlayerPrefs.SetInt("ResolutionIndex", currentResolutionIndex);
+    }
+
+    /// <summary>
+    /// Creates a horizontal slider UI element using Unity's built-in Slider component.
+    /// </summary>
+    private Slider CreateSlider(Transform parent, string name, Vector2 position, Vector2 size, float initialValue)
+    {
+        GameObject sliderObj = new GameObject(name);
+        sliderObj.transform.SetParent(parent, false);
+        RectTransform sliderRect = sliderObj.AddComponent<RectTransform>();
+        sliderRect.anchorMin = new Vector2(0.5f, 0.5f);
+        sliderRect.anchorMax = new Vector2(0.5f, 0.5f);
+        sliderRect.anchoredPosition = position;
+        sliderRect.sizeDelta = size;
+
+        // Background bar (dark track)
+        GameObject bgBar = new GameObject("Background");
+        bgBar.transform.SetParent(sliderObj.transform, false);
+        RectTransform bgBarRect = bgBar.AddComponent<RectTransform>();
+        bgBarRect.anchorMin = Vector2.zero;
+        bgBarRect.anchorMax = Vector2.one;
+        bgBarRect.offsetMin = Vector2.zero;
+        bgBarRect.offsetMax = Vector2.zero;
+        Image bgBarImg = bgBar.AddComponent<Image>();
+        bgBarImg.color = new Color(0.2f, 0.18f, 0.15f, 1f);
+
+        // Fill area container
+        GameObject fillArea = new GameObject("Fill Area");
+        fillArea.transform.SetParent(sliderObj.transform, false);
+        RectTransform fillAreaRect = fillArea.AddComponent<RectTransform>();
+        fillAreaRect.anchorMin = Vector2.zero;
+        fillAreaRect.anchorMax = Vector2.one;
+        fillAreaRect.offsetMin = new Vector2(5, 0);
+        fillAreaRect.offsetMax = new Vector2(-5, 0);
+
+        // Fill bar (gold, shows current value)
+        GameObject fill = new GameObject("Fill");
+        fill.transform.SetParent(fillArea.transform, false);
+        RectTransform fillRect = fill.AddComponent<RectTransform>();
+        fillRect.anchorMin = Vector2.zero;
+        fillRect.anchorMax = Vector2.one;
+        fillRect.offsetMin = Vector2.zero;
+        fillRect.offsetMax = Vector2.zero;
+        Image fillImg = fill.AddComponent<Image>();
+        fillImg.color = new Color(0.85f, 0.7f, 0.35f, 1f); // Gold fill
+
+        // Handle slide area
+        GameObject handleArea = new GameObject("Handle Slide Area");
+        handleArea.transform.SetParent(sliderObj.transform, false);
+        RectTransform handleAreaRect = handleArea.AddComponent<RectTransform>();
+        handleAreaRect.anchorMin = Vector2.zero;
+        handleAreaRect.anchorMax = Vector2.one;
+        handleAreaRect.offsetMin = new Vector2(10, -5);
+        handleAreaRect.offsetMax = new Vector2(-10, 5);
+
+        // Handle (draggable knob)
+        GameObject handle = new GameObject("Handle");
+        handle.transform.SetParent(handleArea.transform, false);
+        RectTransform handleRect = handle.AddComponent<RectTransform>();
+        handleRect.sizeDelta = new Vector2(20, 30);
+        Image handleImg = handle.AddComponent<Image>();
+        handleImg.color = new Color(0.95f, 0.85f, 0.55f, 1f); // Gold handle
+
+        // Wire up the Slider component
+        Slider slider = sliderObj.AddComponent<Slider>();
+        slider.targetGraphic = handleImg;
+        slider.fillRect = fillRect;
+        slider.handleRect = handleRect;
+        slider.minValue = 0f;
+        slider.maxValue = 1f;
+        slider.value = initialValue;
+
+        return slider;
     }
 
     // ==================== UI Factory Methods ====================
