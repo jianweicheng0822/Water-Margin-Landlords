@@ -18,8 +18,9 @@ public class GameSetup : MonoBehaviour
     // Cached button background sprite for all themed buttons
     private Sprite buttonSprite;
 
-    // Background music audio source — plays only on main menu, stops during gameplay
-    private AudioSource bgmSource;
+    // Background music audio sources — menu and game use different BGM
+    private AudioSource menuBgmSource;
+    private AudioSource gameBgmSource;
 
     // Shared canvas used by both menu and game
     private GameObject canvasObj;
@@ -100,21 +101,37 @@ public class GameSetup : MonoBehaviour
             Screen.SetResolution(res.x, res.y, savedFullscreen);
         }
 
-        // Load and play background music
-        AudioClip bgmClip = Resources.Load<AudioClip>("Audio/menu_bgm");
-        if (bgmClip != null)
+        // Load menu background music
+        AudioClip menuClip = Resources.Load<AudioClip>("Audio/menu_bgm");
+        if (menuClip != null)
         {
-            bgmSource = gameObject.AddComponent<AudioSource>();
-            bgmSource.clip = bgmClip;
-            bgmSource.loop = true;
-            bgmSource.volume = savedVolume;
-            bgmSource.mute = (savedVolume <= 0.001f);
-            bgmSource.playOnAwake = false;
-            bgmSource.Play();
+            menuBgmSource = gameObject.AddComponent<AudioSource>();
+            menuBgmSource.clip = menuClip;
+            menuBgmSource.loop = true;
+            menuBgmSource.volume = savedVolume;
+            menuBgmSource.mute = (savedVolume <= 0.001f);
+            menuBgmSource.playOnAwake = false;
+            menuBgmSource.Play();
         }
         else
         {
             Debug.LogWarning("BGM not found: Audio/menu_bgm");
+        }
+
+        // Load game background music (plays during gameplay)
+        AudioClip gameClip = Resources.Load<AudioClip>("Audio/game_bgm");
+        if (gameClip != null)
+        {
+            gameBgmSource = gameObject.AddComponent<AudioSource>();
+            gameBgmSource.clip = gameClip;
+            gameBgmSource.loop = true;
+            gameBgmSource.volume = savedVolume;
+            gameBgmSource.mute = (savedVolume <= 0.001f);
+            gameBgmSource.playOnAwake = false;
+        }
+        else
+        {
+            Debug.LogWarning("BGM not found: Audio/game_bgm");
         }
 
         // Create the main UI canvas
@@ -308,9 +325,11 @@ public class GameSetup : MonoBehaviour
         // Show the main menu again
         menuPanel.SetActive(true);
 
-        // Resume menu BGM when returning to menu
-        if (bgmSource != null && !bgmSource.isPlaying)
-            bgmSource.Play();
+        // Switch from game BGM back to menu BGM
+        if (gameBgmSource != null && gameBgmSource.isPlaying)
+            gameBgmSource.Stop();
+        if (menuBgmSource != null && !menuBgmSource.isPlaying)
+            menuBgmSource.Play();
     }
 
     /// <summary>
@@ -318,9 +337,11 @@ public class GameSetup : MonoBehaviour
     /// </summary>
     private void CreateGame()
     {
-        // Stop menu BGM when entering gameplay
-        if (bgmSource != null && bgmSource.isPlaying)
-            bgmSource.Stop();
+        // Switch from menu BGM to game BGM
+        if (menuBgmSource != null && menuBgmSource.isPlaying)
+            menuBgmSource.Stop();
+        if (gameBgmSource != null && !gameBgmSource.isPlaying)
+            gameBgmSource.Play();
 
         // Container for all game objects so we can destroy them when returning to menu
         gameObjectsRoot = new GameObject("GameObjects");
@@ -578,7 +599,7 @@ public class GameSetup : MonoBehaviour
         RectTransform pauseCenterRect = pauseCenter.AddComponent<RectTransform>();
         pauseCenterRect.anchorMin = new Vector2(0.5f, 0.5f);
         pauseCenterRect.anchorMax = new Vector2(0.5f, 0.5f);
-        pauseCenterRect.sizeDelta = new Vector2(350, 360);
+        pauseCenterRect.sizeDelta = new Vector2(350, 420);
         Image pauseBg = pauseCenter.AddComponent<Image>();
         pauseBg.color = new Color(0.15f, 0.12f, 0.1f, 0.95f);
 
@@ -587,15 +608,149 @@ public class GameSetup : MonoBehaviour
             new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
             new Vector2(0, -40), new Vector2(300, 50), 32);
 
-        // Resume, Restart, Return to Menu, Quit buttons
+        // Resume, Settings, Restart, Return to Menu, Quit buttons
         Button resumeButton = CreateButton(pauseCenter.transform, "ResumeButton",
-            "\u7ee7\u7eed\u6e38\u620f", new Vector2(0, 50), new Vector2(220, 50));  // 继续游戏
+            "\u7ee7\u7eed\u6e38\u620f", new Vector2(0, 80), new Vector2(220, 50));  // 继续游戏
+        Button pauseSettingsButton = CreateButton(pauseCenter.transform, "PauseSettingsButton",
+            "\u8bbe\u7f6e", new Vector2(0, 20), new Vector2(220, 50));  // 设置
         Button pauseRestartButton = CreateButton(pauseCenter.transform, "PauseRestartButton",
-            "\u91cd\u65b0\u5f00\u59cb", new Vector2(0, -10), new Vector2(220, 50));  // 重新开始
+            "\u91cd\u65b0\u5f00\u59cb", new Vector2(0, -40), new Vector2(220, 50));  // 重新开始
         Button mainMenuButton = CreateButton(pauseCenter.transform, "MainMenuButton",
-            "\u8fd4\u56de\u4e3b\u83dc\u5355", new Vector2(0, -70), new Vector2(220, 50));  // 返回主菜单
+            "\u8fd4\u56de\u4e3b\u83dc\u5355", new Vector2(0, -100), new Vector2(220, 50));  // 返回主菜单
         Button quitButton = CreateButton(pauseCenter.transform, "QuitButton",
-            "\u9000\u51fa\u6e38\u620f", new Vector2(0, -130), new Vector2(220, 50));  // 退出游戏
+            "\u9000\u51fa\u6e38\u620f", new Vector2(0, -160), new Vector2(220, 50));  // 退出游戏
+
+        // ---- In-game settings sub-panel (shown over pause menu) ----
+        GameObject gameSettingsPanel = CreatePanel(pauseOverlay.transform, "GameSettingsPanel",
+            Vector2.zero, Vector2.one, new Color(0, 0, 0, 0.5f));
+
+        GameObject gsCenter = new GameObject("GameSettingsCenter");
+        gsCenter.transform.SetParent(gameSettingsPanel.transform, false);
+        RectTransform gsCenterRect = gsCenter.AddComponent<RectTransform>();
+        gsCenterRect.anchorMin = new Vector2(0.5f, 0.5f);
+        gsCenterRect.anchorMax = new Vector2(0.5f, 0.5f);
+        gsCenterRect.sizeDelta = new Vector2(500, 450);
+        Image gsCenterBg = gsCenter.AddComponent<Image>();
+        gsCenterBg.color = new Color(0.12f, 0.1f, 0.08f, 0.95f);
+        Outline gsOutline = gsCenter.AddComponent<Outline>();
+        gsOutline.effectColor = new Color(0.6f, 0.5f, 0.3f);
+        gsOutline.effectDistance = new Vector2(2, 2);
+
+        // Title
+        CreateText(gsCenter.transform, "GSTitle", "\u8bbe\u7f6e",  // 设置
+            new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+            new Vector2(0, -35), new Vector2(300, 50), 30);
+
+        // ---- BGM Volume ----
+        CreateText(gsCenter.transform, "GSBgmLabel", "\u80cc\u666f\u97f3\u4e50",  // 背景音乐
+            new Vector2(0, 0.5f), new Vector2(0, 0.5f),
+            new Vector2(80, 100), new Vector2(140, 30), 18);
+
+        float curBgmVol = gameBgmSource != null ? gameBgmSource.volume : 0.3f;
+        TextMeshProUGUI gsBgmValue = CreateText(gsCenter.transform, "GSBgmValue",
+            Mathf.RoundToInt(curBgmVol * 100) + "%",
+            new Vector2(1, 0.5f), new Vector2(1, 0.5f),
+            new Vector2(-45, 100), new Vector2(60, 30), 18);
+
+        Slider gsBgmSlider = CreateSlider(gsCenter.transform, "GSBgmSlider",
+            new Vector2(0, 100), new Vector2(220, 20), curBgmVol);
+
+        gsBgmSlider.onValueChanged.AddListener((float value) =>
+        {
+            SetBgmVolume(value);
+            gsBgmValue.text = Mathf.RoundToInt(value * 100) + "%";
+            PlayerPrefs.SetFloat("MusicVolume", value);
+        });
+
+        // ---- SFX Volume ----
+        CreateText(gsCenter.transform, "GSSfxLabel", "\u97f3\u6548",  // 音效
+            new Vector2(0, 0.5f), new Vector2(0, 0.5f),
+            new Vector2(80, 40), new Vector2(140, 30), 18);
+
+        float curSfxVol = SoundManager.Instance != null ? SoundManager.Instance.GetVolume() : 0.5f;
+        TextMeshProUGUI gsSfxValue = CreateText(gsCenter.transform, "GSSfxValue",
+            Mathf.RoundToInt(curSfxVol * 100) + "%",
+            new Vector2(1, 0.5f), new Vector2(1, 0.5f),
+            new Vector2(-45, 40), new Vector2(60, 30), 18);
+
+        Slider gsSfxSlider = CreateSlider(gsCenter.transform, "GSSfxSlider",
+            new Vector2(0, 40), new Vector2(220, 20), curSfxVol);
+
+        gsSfxSlider.onValueChanged.AddListener((float value) =>
+        {
+            if (SoundManager.Instance != null) SoundManager.Instance.SetVolume(value);
+            gsSfxValue.text = Mathf.RoundToInt(value * 100) + "%";
+        });
+
+        // ---- Resolution ----
+        CreateText(gsCenter.transform, "GSResLabel", "\u5206\u8fa8\u7387",  // 分辨率
+            new Vector2(0, 0.5f), new Vector2(0, 0.5f),
+            new Vector2(80, -30), new Vector2(140, 30), 18);
+
+        Vector2Int curRes = resolutionOptions[currentResolutionIndex];
+        TextMeshProUGUI gsResValue = CreateText(gsCenter.transform, "GSResValue",
+            curRes.x + "x" + curRes.y,
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+            new Vector2(30, -30), new Vector2(160, 30), 18);
+
+        Button gsResLeft = CreateButton(gsCenter.transform, "GSResLeft",
+            "<", new Vector2(110, -30), new Vector2(40, 35));
+        gsResLeft.GetComponentInChildren<TextMeshProUGUI>().fontSize = 20;
+
+        Button gsResRight = CreateButton(gsCenter.transform, "GSResRight",
+            ">", new Vector2(280, -30), new Vector2(40, 35));
+        gsResRight.GetComponentInChildren<TextMeshProUGUI>().fontSize = 20;
+
+        gsResLeft.onClick.AddListener(() =>
+        {
+            currentResolutionIndex = (currentResolutionIndex - 1 + resolutionOptions.Count) % resolutionOptions.Count;
+            ApplyResolution(gsResValue);
+        });
+
+        gsResRight.onClick.AddListener(() =>
+        {
+            currentResolutionIndex = (currentResolutionIndex + 1) % resolutionOptions.Count;
+            ApplyResolution(gsResValue);
+        });
+
+        // ---- Fullscreen toggle ----
+        CreateText(gsCenter.transform, "GSFullLabel", "\u5168\u5c4f\u6a21\u5f0f",  // 全屏模式
+            new Vector2(0, 0.5f), new Vector2(0, 0.5f),
+            new Vector2(80, -90), new Vector2(140, 30), 18);
+
+        Button gsFullBtn = CreateButton(gsCenter.transform, "GSFullToggle",
+            Screen.fullScreen ? "\u5f00" : "\u5173",  // 开 or 关
+            new Vector2(195, -90), new Vector2(80, 35));
+        TextMeshProUGUI gsFullText = gsFullBtn.GetComponentInChildren<TextMeshProUGUI>();
+
+        gsFullBtn.onClick.AddListener(() =>
+        {
+            Screen.fullScreen = !Screen.fullScreen;
+            gsFullText.text = Screen.fullScreen ? "\u5f00" : "\u5173";
+            PlayerPrefs.SetInt("Fullscreen", Screen.fullScreen ? 1 : 0);
+        });
+
+        // ---- Back button ----
+        Button gsBackBtn = CreateButton(gsCenter.transform, "GSBackBtn",
+            "\u8fd4\u56de", new Vector2(0, -160), new Vector2(180, 50));  // 返回
+        RectTransform gsBackRect = gsBackBtn.GetComponent<RectTransform>();
+        gsBackRect.anchorMin = new Vector2(0.5f, 0.5f);
+        gsBackRect.anchorMax = new Vector2(0.5f, 0.5f);
+
+        gsBackBtn.onClick.AddListener(() =>
+        {
+            PlayerPrefs.Save();
+            gameSettingsPanel.SetActive(false);
+        });
+
+        // Start hidden
+        gameSettingsPanel.SetActive(false);
+
+        // Wire settings button to show the sub-panel
+        pauseSettingsButton.onClick.AddListener(() =>
+        {
+            gameSettingsPanel.SetActive(true);
+        });
 
         // Start hidden
         pauseOverlay.SetActive(false);
@@ -666,24 +821,19 @@ public class GameSetup : MonoBehaviour
             new Vector2(80, 80), new Vector2(140, 30), 18);
 
         // Volume percentage text (updated by slider)
+        float currentBgmVol = menuBgmSource != null ? menuBgmSource.volume : 0.3f;
         TextMeshProUGUI volumeValueText = CreateText(centerPanel.transform, "VolumeValue",
-            Mathf.RoundToInt((bgmSource != null ? bgmSource.volume : 0.3f) * 100) + "%",
+            Mathf.RoundToInt(currentBgmVol * 100) + "%",
             new Vector2(1, 0.5f), new Vector2(1, 0.5f),
             new Vector2(-45, 80), new Vector2(60, 30), 18);
 
-        // Volume slider
+        // BGM volume slider — controls both menu and game BGM
         Slider volumeSlider = CreateSlider(centerPanel.transform, "VolumeSlider",
-            new Vector2(0, 80), new Vector2(220, 20),
-            bgmSource != null ? bgmSource.volume : 0.3f);
+            new Vector2(0, 80), new Vector2(220, 20), currentBgmVol);
 
         volumeSlider.onValueChanged.AddListener((float value) =>
         {
-            if (bgmSource != null)
-            {
-                bgmSource.volume = value;
-                // Mute the source entirely at zero to prevent any audio leakage
-                bgmSource.mute = (value <= 0.001f);
-            }
+            SetBgmVolume(value);
             volumeValueText.text = Mathf.RoundToInt(value * 100) + "%";
             PlayerPrefs.SetFloat("MusicVolume", value);
         });
@@ -769,6 +919,23 @@ public class GameSetup : MonoBehaviour
         resText.text = res.x + "x" + res.y;
         Screen.SetResolution(res.x, res.y, Screen.fullScreen);
         PlayerPrefs.SetInt("ResolutionIndex", currentResolutionIndex);
+    }
+
+    /// <summary>
+    /// Sets volume on both menu and game BGM sources and handles muting.
+    /// </summary>
+    private void SetBgmVolume(float value)
+    {
+        if (menuBgmSource != null)
+        {
+            menuBgmSource.volume = value;
+            menuBgmSource.mute = (value <= 0.001f);
+        }
+        if (gameBgmSource != null)
+        {
+            gameBgmSource.volume = value;
+            gameBgmSource.mute = (value <= 0.001f);
+        }
     }
 
     /// <summary>
