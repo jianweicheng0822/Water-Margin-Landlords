@@ -79,6 +79,7 @@ public class SoundManager : MonoBehaviour
 
     /// <summary>
     /// Plays a sound effect by name (without the "sfx_" prefix is also accepted).
+    /// Stops any currently playing SFX first to prevent overlap/trailing sounds.
     /// Example: Play("play") or Play("sfx_play") both work.
     /// </summary>
     public void Play(string name)
@@ -88,7 +89,11 @@ public class SoundManager : MonoBehaviour
 
         if (clips.TryGetValue(key, out AudioClip clip))
         {
-            sfxSource.PlayOneShot(clip, sfxVolume);
+            // Stop any previous sound to prevent overlap and trailing audio
+            sfxSource.Stop();
+            sfxSource.clip = clip;
+            sfxSource.volume = sfxVolume;
+            sfxSource.Play();
         }
         else
         {
