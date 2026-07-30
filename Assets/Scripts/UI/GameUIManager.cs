@@ -682,6 +682,7 @@ public class GameUIManager : MonoBehaviour
         // Clear hand display, played cards, card backs, and last played text
         handView.ClearHand();
         ClearAllPlayedAreas();
+        SetPlayedAreaLabelsVisible(new bool[3]); // Hide all name labels
         lastPlayedText.text = "";
 
         // Clear AI card backs
@@ -723,24 +724,32 @@ public class GameUIManager : MonoBehaviour
     /// <summary>
     /// Updates the played cards display with card images above the player who played.
     /// Shows "不出" text for players who passed.
+    /// Shows/hides player name labels only when there's content in the played area.
     /// </summary>
     private void UpdateLastPlayedDisplay()
     {
         // Clear all played card areas first
         ClearAllPlayedAreas();
 
+        // Track which players have visible content (cards or pass text)
+        bool[] hasContent = new bool[3];
+
         CardCombo lastCombo = turnManager.GetLastPlayedCombo();
         if (lastCombo != null)
         {
             int playerIndex = turnManager.GetLastPlayedBy();
             ShowPlayedCards(playerIndex, lastCombo.Cards);
+            hasContent[playerIndex] = true;
             lastPlayedText.text = $"({GetComboTypeName(lastCombo.Type)})";
 
             // Show "不出" for players who passed
             for (int i = 0; i < 3; i++)
             {
                 if (playerPassed[i])
+                {
                     ShowPassText(i);
+                    hasContent[i] = true;
+                }
             }
         }
         else
@@ -749,10 +758,29 @@ public class GameUIManager : MonoBehaviour
             playerPassed = new bool[3];
             lastPlayedText.text = "\u81ea\u7531\u51fa\u724c";  // 自由出牌
         }
+
+        // Show/hide name labels based on whether their area has content
+        SetPlayedAreaLabelsVisible(hasContent);
+    }
+
+    /// <summary>
+    /// Shows or hides the name label backing panels above each played area.
+    /// Labels are only shown when the area has cards or pass text.
+    /// </summary>
+    private void SetPlayedAreaLabelsVisible(bool[] visible)
+    {
+        if (playedAreaLabels == null) return;
+        for (int i = 0; i < playedAreaLabels.Length; i++)
+        {
+            // The label's parent is the backing panel GameObject
+            GameObject backingPanel = playedAreaLabels[i].transform.parent.gameObject;
+            backingPanel.SetActive(visible[i]);
+        }
     }
 
     /// <summary>
     /// Clears all card images from all played card areas.
+    /// Preserves label backing panels (children named "LabelBg_*").
     /// </summary>
     private void ClearAllPlayedAreas()
     {
@@ -761,7 +789,9 @@ public class GameUIManager : MonoBehaviour
         {
             for (int i = area.childCount - 1; i >= 0; i--)
             {
-                Destroy(area.GetChild(i).gameObject);
+                GameObject child = area.GetChild(i).gameObject;
+                if (!child.name.StartsWith("LabelBg"))
+                    Destroy(child);
             }
         }
     }

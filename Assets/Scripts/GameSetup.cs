@@ -518,6 +518,11 @@ public class GameSetup : MonoBehaviour
 
         TextMeshProUGUI[] playedAreaLabels = { playedLabel0, playedLabel1, playedLabel2 };
 
+        // Hide name labels initially — they appear when cards are played
+        labelBg0.SetActive(false);
+        labelBg1.SetActive(false);
+        labelBg2.SetActive(false);
+
         // ==================== Center Area ====================
 
         // Message text backing panel (top center) — dark ink wash style backdrop
