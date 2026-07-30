@@ -490,36 +490,81 @@ public class GameSetup : MonoBehaviour
         Transform[] playedAreas = { playedArea0.transform, playedArea1.transform, playedArea2.transform };
 
         // Name labels above each played cards area (shows name + role during gameplay)
-        TextMeshProUGUI playedLabel0 = CreateText(playedArea0.transform, "PlayedLabel_You",
+        // Each label has a small ink-style backing panel for readability
+
+        GameObject labelBg0 = CreateLabelBacking(playedArea0.transform, "LabelBg_You",
+            new Vector2(0.5f, 1), new Vector2(0, 18), new Vector2(160, 28));
+        TextMeshProUGUI playedLabel0 = CreateText(labelBg0.transform, "PlayedLabel_You",
             "\u5b8b\u6c5f",  // 宋江
-            new Vector2(0.5f, 1), new Vector2(0.5f, 1),
-            new Vector2(0, 18), new Vector2(200, 24), 14);
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+            Vector2.zero, new Vector2(150, 24), 14);
+        playedLabel0.color = new Color(0.95f, 0.85f, 0.55f); // Gold
 
-        TextMeshProUGUI playedLabel1 = CreateText(playedArea1.transform, "PlayedLabel_Left",
+        GameObject labelBg1 = CreateLabelBacking(playedArea1.transform, "LabelBg_Left",
+            new Vector2(0.5f, 1), new Vector2(0, 18), new Vector2(160, 28));
+        TextMeshProUGUI playedLabel1 = CreateText(labelBg1.transform, "PlayedLabel_Left",
             "\u6797\u51b2",  // 林冲
-            new Vector2(0.5f, 1), new Vector2(0.5f, 1),
-            new Vector2(0, 18), new Vector2(200, 24), 14);
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+            Vector2.zero, new Vector2(150, 24), 14);
+        playedLabel1.color = new Color(0.95f, 0.85f, 0.55f); // Gold
 
-        TextMeshProUGUI playedLabel2 = CreateText(playedArea2.transform, "PlayedLabel_Right",
+        GameObject labelBg2 = CreateLabelBacking(playedArea2.transform, "LabelBg_Right",
+            new Vector2(0.5f, 1), new Vector2(0, 18), new Vector2(160, 28));
+        TextMeshProUGUI playedLabel2 = CreateText(labelBg2.transform, "PlayedLabel_Right",
             "\u9c81\u667a\u6df1",  // 鲁智深
-            new Vector2(0.5f, 1), new Vector2(0.5f, 1),
-            new Vector2(0, 18), new Vector2(200, 24), 14);
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+            Vector2.zero, new Vector2(150, 24), 14);
+        playedLabel2.color = new Color(0.95f, 0.85f, 0.55f); // Gold
 
         TextMeshProUGUI[] playedAreaLabels = { playedLabel0, playedLabel1, playedLabel2 };
 
         // ==================== Center Area ====================
 
-        // Message text (top center)
-        TextMeshProUGUI messageText = CreateText(gameObjectsRoot.transform, "MessageText",
-            "\u6b22\u8fce\u6765\u5230\u6c34\u6d52\u4f20\u6597\u5730\u4e3b\uff01",  // 欢迎来到水浒传斗地主！
-            new Vector2(0.5f, 0.95f), new Vector2(0.5f, 0.95f),
-            Vector2.zero, new Vector2(600, 40), 20);
+        // Message text backing panel (top center) — dark ink wash style backdrop
+        GameObject msgPanel = new GameObject("MessagePanel");
+        msgPanel.transform.SetParent(gameObjectsRoot.transform, false);
+        RectTransform msgPanelRect = msgPanel.AddComponent<RectTransform>();
+        msgPanelRect.anchorMin = new Vector2(0.5f, 0.95f);
+        msgPanelRect.anchorMax = new Vector2(0.5f, 0.95f);
+        msgPanelRect.pivot = new Vector2(0.5f, 0.5f);
+        msgPanelRect.anchoredPosition = Vector2.zero;
+        msgPanelRect.sizeDelta = new Vector2(650, 48);
+        Image msgPanelBg = msgPanel.AddComponent<Image>();
+        msgPanelBg.color = new Color(0.08f, 0.06f, 0.04f, 0.8f);
+        msgPanelBg.raycastTarget = false;
+        Outline msgPanelOutline = msgPanel.AddComponent<Outline>();
+        msgPanelOutline.effectColor = new Color(0.5f, 0.4f, 0.25f, 0.6f);
+        msgPanelOutline.effectDistance = new Vector2(1, 1);
 
-        // Combo type label (center, between played areas)
-        TextMeshProUGUI lastPlayedText = CreateText(gameObjectsRoot.transform, "LastPlayedText",
+        // Message text (inside panel)
+        TextMeshProUGUI messageText = CreateText(msgPanel.transform, "MessageText",
+            "\u6b22\u8fce\u6765\u5230\u6c34\u6d52\u4f20\u6597\u5730\u4e3b\uff01",  // 欢迎来到水浒传斗地主！
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+            Vector2.zero, new Vector2(620, 40), 20);
+        messageText.color = new Color(0.95f, 0.85f, 0.55f); // Gold text
+
+        // Combo type label backing panel (center, between played areas)
+        GameObject comboPanel = new GameObject("ComboPanel");
+        comboPanel.transform.SetParent(gameObjectsRoot.transform, false);
+        RectTransform comboPanelRect = comboPanel.AddComponent<RectTransform>();
+        comboPanelRect.anchorMin = new Vector2(0.5f, 0.52f);
+        comboPanelRect.anchorMax = new Vector2(0.5f, 0.52f);
+        comboPanelRect.pivot = new Vector2(0.5f, 0.5f);
+        comboPanelRect.anchoredPosition = Vector2.zero;
+        comboPanelRect.sizeDelta = new Vector2(200, 36);
+        Image comboPanelBg = comboPanel.AddComponent<Image>();
+        comboPanelBg.color = new Color(0.08f, 0.06f, 0.04f, 0.7f);
+        comboPanelBg.raycastTarget = false;
+        Outline comboPanelOutline = comboPanel.AddComponent<Outline>();
+        comboPanelOutline.effectColor = new Color(0.5f, 0.4f, 0.25f, 0.5f);
+        comboPanelOutline.effectDistance = new Vector2(1, 1);
+
+        // Combo type text (inside panel)
+        TextMeshProUGUI lastPlayedText = CreateText(comboPanel.transform, "LastPlayedText",
             "",
-            new Vector2(0.5f, 0.52f), new Vector2(0.5f, 0.52f),
-            Vector2.zero, new Vector2(300, 30), 16);
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+            Vector2.zero, new Vector2(180, 30), 16);
+        lastPlayedText.color = new Color(0.9f, 0.82f, 0.6f); // Warm gold
 
         // ==================== Multiplier Display (top center) ====================
 
@@ -1046,6 +1091,33 @@ public class GameSetup : MonoBehaviour
     }
 
     // ==================== UI Factory Methods ====================
+
+    /// <summary>
+    /// Creates a small dark backing panel for text labels floating over the background.
+    /// Provides contrast so text is readable on busy ink wash backgrounds.
+    /// </summary>
+    private GameObject CreateLabelBacking(Transform parent, string name,
+        Vector2 anchor, Vector2 position, Vector2 size)
+    {
+        GameObject obj = new GameObject(name);
+        obj.transform.SetParent(parent, false);
+        RectTransform rect = obj.AddComponent<RectTransform>();
+        rect.anchorMin = anchor;
+        rect.anchorMax = anchor;
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = position;
+        rect.sizeDelta = size;
+
+        Image bg = obj.AddComponent<Image>();
+        bg.color = new Color(0.08f, 0.06f, 0.04f, 0.7f);
+        bg.raycastTarget = false;
+
+        Outline outline = obj.AddComponent<Outline>();
+        outline.effectColor = new Color(0.5f, 0.4f, 0.25f, 0.4f);
+        outline.effectDistance = new Vector2(1, 1);
+
+        return obj;
+    }
 
     /// <summary>
     /// Creates a full-screen colored panel.
