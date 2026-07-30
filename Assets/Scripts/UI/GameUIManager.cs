@@ -20,16 +20,18 @@ public class GameUIManager : MonoBehaviour
     // UI elements (created by GameSetup)
     private Button playButton;
     private Button passButton;
-    private Button bid1Button;
-    private Button bid2Button;
-    private Button bid3Button;
-    private Button noBidButton;
+    private Button callButton;    // "叫地主" in calling phase, "抢地主" in grabbing phase
+    private Button noBidButton;   // "不叫" in calling phase, "不抢" in grabbing phase
     private GameObject bidPanel;
     private GameObject playPanel;
     private TextMeshProUGUI messageText;
     private TextMeshProUGUI lastPlayedText;
     private TextMeshProUGUI[] playerInfoTexts = new TextMeshProUGUI[3];
     private Button restartButton;
+
+    // Multiplier display
+    private TextMeshProUGUI multiplierText;
+    private GameObject multiplierFrame;
 
     // Played cards display areas (one per player, positioned above each player)
     private Transform[] playedCardAreas;
@@ -93,18 +95,17 @@ public class GameUIManager : MonoBehaviour
     /// </summary>
     public void SetUIElements(
         Button playBtn, Button passBtn,
-        Button bid1Btn, Button bid2Btn, Button bid3Btn, Button noBidBtn,
+        Button callBtn, Button noBidBtn,
         GameObject bidPnl, GameObject playPnl,
         TextMeshProUGUI msgText, TextMeshProUGUI lastPlayed,
         TextMeshProUGUI[] playerInfos, Button restartBtn,
         Transform[] playedAreas, Transform[] aiCardAreas,
-        TextMeshProUGUI[] playedLabels, TextMeshProUGUI[] timers)
+        TextMeshProUGUI[] playedLabels, TextMeshProUGUI[] timers,
+        TextMeshProUGUI multText, GameObject multFrame)
     {
         playButton = playBtn;
         passButton = passBtn;
-        bid1Button = bid1Btn;
-        bid2Button = bid2Btn;
-        bid3Button = bid3Btn;
+        callButton = callBtn;
         noBidButton = noBidBtn;
         bidPanel = bidPnl;
         playPanel = playPnl;
@@ -116,13 +117,13 @@ public class GameUIManager : MonoBehaviour
         aiCardBackAreas = aiCardAreas;
         playedAreaLabels = playedLabels;
         timerTexts = timers;
+        multiplierText = multText;
+        multiplierFrame = multFrame;
 
         // Wire up button clicks
         playButton.onClick.AddListener(OnPlayClicked);
         passButton.onClick.AddListener(OnPassClicked);
-        bid1Button.onClick.AddListener(() => OnBidScoreClicked(1));
-        bid2Button.onClick.AddListener(() => OnBidScoreClicked(2));
-        bid3Button.onClick.AddListener(() => OnBidScoreClicked(3));
+        callButton.onClick.AddListener(OnCallClicked);
         noBidButton.onClick.AddListener(OnNoBidClicked);
         restartButton.onClick.AddListener(OnRestartClicked);
 
@@ -299,6 +300,12 @@ public class GameUIManager : MonoBehaviour
     public void StartBidding()
     {
         bidManager.StartBidding();
+
+        // Show multiplier display and reset to ×1
+        UpdateMultiplierDisplay();
+        if (multiplierFrame != null)
+            multiplierFrame.SetActive(true);
+
         ProcessBidTurn();
     }
 
@@ -316,13 +323,25 @@ public class GameUIManager : MonoBehaviour
         if (currentBidder == 0)
         {
             // Human player's turn to bid — start 15s countdown
-            int highest = bidManager.GetHighestBid();
-            SetMessage(highest > 0
-                ? $"\u5f53\u524d\u6700\u9ad8\u53eb\u5206\uff1a{highest}\u5206\u3002\u8bf7\u53eb\u5206\u3002"  // 当前最高叫分：X分。请叫分。
-                : "\u8bf7\u53eb\u5206\u3002");  // 请叫分。
+            bool isGrabbing = bidManager.CurrentPhase == BidManager.BidPhase.Grabbing;
+
+            if (isGrabbing)
+            {
+                SetMessage("\u8981\u62a2\u5730\u4e3b\u5417\uff1f");  // 要抢地主吗？
+                // Update button labels for grabbing phase
+                callButton.GetComponentInChildren<TextMeshProUGUI>().text = "\u62a2\u5730\u4e3b";  // 抢地主
+                noBidButton.GetComponentInChildren<TextMeshProUGUI>().text = "\u4e0d\u62a2";  // 不抢
+            }
+            else
+            {
+                SetMessage("\u8981\u53eb\u5730\u4e3b\u5417\uff1f");  // 要叫地主吗？
+                // Update button labels for calling phase
+                callButton.GetComponentInChildren<TextMeshProUGUI>().text = "\u53eb\u5730\u4e3b";  // 叫地主
+                noBidButton.GetComponentInChildren<TextMeshProUGUI>().text = "\u4e0d\u53eb";  // 不叫
+            }
+
             bidPanel.SetActive(true);
             playPanel.SetActive(false);
-            UpdateBidButtons();
             StartTimer(0, BID_TIME_LIMIT);
         }
         else
@@ -330,6 +349,9 @@ public class GameUIManager : MonoBehaviour
             // AI player's turn to bid
             bidPanel.SetActive(false);
             aiPlayer.HandleBid(currentBidder);
+
+            // Update multiplier display after AI decision
+            UpdateMultiplierDisplay();
 
             // Check if bidding ended (someone bid or need to re-deal)
             if (!bidManager.IsBidding())
@@ -344,12 +366,26 @@ public class GameUIManager : MonoBehaviour
         }
     }
 
-    private void OnBidScoreClicked(int score)
+    /// <summary>
+    /// Called when the human player clicks "叫地主" or "抢地主".
+    /// </summary>
+    private void OnCallClicked()
     {
         StopTimer();
         if (SoundManager.Instance != null) SoundManager.Instance.Play("bid");
         bidPanel.SetActive(false);
-        bidManager.BidScore(score);
+
+        if (bidManager.CurrentPhase == BidManager.BidPhase.Calling)
+        {
+            bidManager.CallLandlord();
+        }
+        else
+        {
+            bidManager.GrabLandlord();
+        }
+
+        // Update multiplier display after player's decision
+        UpdateMultiplierDisplay();
 
         if (!bidManager.IsBidding())
         {
@@ -361,6 +397,9 @@ public class GameUIManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Called when the human player clicks "不叫" or "不抢".
+    /// </summary>
     private void OnNoBidClicked()
     {
         StopTimer();
@@ -377,7 +416,7 @@ public class GameUIManager : MonoBehaviour
             }
             else
             {
-                // Someone had bid earlier, they became landlord
+                // Someone had called/grabbed, they became landlord
                 OnBiddingComplete();
             }
         }
@@ -388,15 +427,14 @@ public class GameUIManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Enables/disables bid score buttons based on the current highest bid.
-    /// Players can only bid higher than the current highest.
+    /// Updates the multiplier display text to show the current grab multiplier.
     /// </summary>
-    private void UpdateBidButtons()
+    private void UpdateMultiplierDisplay()
     {
-        int highest = bidManager.GetHighestBid();
-        bid1Button.interactable = highest < 1;
-        bid2Button.interactable = highest < 2;
-        bid3Button.interactable = highest < 3;
+        if (multiplierText != null)
+        {
+            multiplierText.text = $"\u00d7{bidManager.Multiplier}";  // ×N
+        }
     }
 
     /// <summary>
@@ -413,8 +451,8 @@ public class GameUIManager : MonoBehaviour
         RefreshHand();
         UpdatePlayerInfo();
 
-        // Initialize score tracking with the bid score
-        scoreManager.ResetForNewGame(bidManager.FinalBidScore);
+        // Initialize score tracking with the grab multiplier
+        scoreManager.ResetForNewGame(bidManager.Multiplier);
 
         // Start playing phase
         turnManager.StartPlaying();
@@ -636,8 +674,10 @@ public class GameUIManager : MonoBehaviour
         if (pausePanel != null)
             pausePanel.SetActive(false);
 
-        // Hide restart button
+        // Hide restart button and multiplier display
         restartButton.gameObject.SetActive(false);
+        if (multiplierFrame != null)
+            multiplierFrame.SetActive(false);
 
         // Clear hand display, played cards, card backs, and last played text
         handView.ClearHand();

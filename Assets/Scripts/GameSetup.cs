@@ -521,6 +521,41 @@ public class GameSetup : MonoBehaviour
             new Vector2(0.5f, 0.52f), new Vector2(0.5f, 0.52f),
             Vector2.zero, new Vector2(300, 30), 16);
 
+        // ==================== Multiplier Display (top center) ====================
+
+        GameObject multiplierFrame = new GameObject("MultiplierFrame");
+        multiplierFrame.transform.SetParent(gameObjectsRoot.transform, false);
+        RectTransform multRect = multiplierFrame.AddComponent<RectTransform>();
+        multRect.anchorMin = new Vector2(0.5f, 0.9f);
+        multRect.anchorMax = new Vector2(0.5f, 0.9f);
+        multRect.pivot = new Vector2(0.5f, 0.5f);
+        multRect.anchoredPosition = Vector2.zero;
+        multRect.sizeDelta = new Vector2(120, 50);
+
+        // Dark background
+        Image multBg = multiplierFrame.AddComponent<Image>();
+        multBg.color = new Color(0.1f, 0.08f, 0.06f, 0.85f);
+        multBg.raycastTarget = false;
+
+        // Gold outline border
+        Outline multOutline = multiplierFrame.AddComponent<Outline>();
+        multOutline.effectColor = new Color(0.6f, 0.5f, 0.3f);
+        multOutline.effectDistance = new Vector2(2, 2);
+
+        Outline multOutline2 = multiplierFrame.AddComponent<Outline>();
+        multOutline2.effectColor = new Color(0.5f, 0.4f, 0.25f);
+        multOutline2.effectDistance = new Vector2(-1, -1);
+
+        // Multiplier text "×1"
+        TextMeshProUGUI multiplierText = CreateText(multiplierFrame.transform, "MultiplierText",
+            "\u00d71",  // ×1
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+            Vector2.zero, new Vector2(100, 40), 28);
+        multiplierText.color = new Color(0.95f, 0.85f, 0.55f); // Gold text
+
+        // Start hidden, shown when bidding starts
+        multiplierFrame.SetActive(false);
+
         // ==================== Bid Panel ====================
 
         GameObject bidPanel = new GameObject("BidPanel");
@@ -529,16 +564,14 @@ public class GameSetup : MonoBehaviour
         bidPanelRect.anchorMin = new Vector2(0.5f, 0);
         bidPanelRect.anchorMax = new Vector2(0.5f, 0);
         bidPanelRect.anchoredPosition = new Vector2(0, 260);
-        bidPanelRect.sizeDelta = new Vector2(700, 50);
+        bidPanelRect.sizeDelta = new Vector2(400, 50);
 
-        Button bid1Button = CreateButton(bidPanel.transform, "Bid1Button",
-            "1\u5206", new Vector2(-240, 0), new Vector2(140, 45));   // 1分
-        Button bid2Button = CreateButton(bidPanel.transform, "Bid2Button",
-            "2\u5206", new Vector2(-80, 0), new Vector2(140, 45));   // 2分
-        Button bid3Button = CreateButton(bidPanel.transform, "Bid3Button",
-            "3\u5206", new Vector2(80, 0), new Vector2(140, 45));    // 3分
+        // "叫地主" button (also used as "抢地主" in grabbing phase)
+        Button callButton = CreateButton(bidPanel.transform, "CallButton",
+            "\u53eb\u5730\u4e3b", new Vector2(-110, 0), new Vector2(160, 45));  // 叫地主
+        // "不叫" button (also used as "不抢" in grabbing phase)
         Button noBidButton = CreateButton(bidPanel.transform, "NoBidButton",
-            "\u4e0d\u53eb", new Vector2(240, 0), new Vector2(140, 45));  // 不叫
+            "\u4e0d\u53eb", new Vector2(110, 0), new Vector2(160, 45));  // 不叫
 
         // ==================== Play Panel ====================
 
@@ -764,12 +797,13 @@ public class GameSetup : MonoBehaviour
         Transform[] aiCardAreas = { aiCards1.transform, aiCards2.transform };
         uiManager.SetUIElements(
             playButton, passButton,
-            bid1Button, bid2Button, bid3Button, noBidButton,
+            callButton, noBidButton,
             bidPanel, playPanel,
             messageText, lastPlayedText,
             playerInfoTexts, restartButton,
             playedAreas, aiCardAreas,
-            playedAreaLabels, timerTexts
+            playedAreaLabels, timerTexts,
+            multiplierText, multiplierFrame
         );
 
         // Wire pause panel

@@ -1,31 +1,59 @@
 using UnityEngine;
 
 /// <summary>
-/// Manages the score-based bidding phase of a Dou Di Zhu game.
-/// Players can bid 1, 2, or 3 points. Each subsequent player must bid higher or pass.
-/// The highest bidder becomes the landlord. The bid score determines the base multiplier.
+/// Manages the "grab landlord" (抢地主) bidding phase of a Dou Di Zhu game.
+/// Two-phase system:
+///   Phase 1 (Calling): Players take turns choosing "叫地主" or "不叫".
+///   Phase 2 (Grabbing): Once someone calls, the other two each get one chance to "抢地主" or "不抢".
+/// Each grab doubles the multiplier: ×1 (base) → ×2 (one grab) → ×4 (two grabs).
+/// The last person to grab becomes landlord; if nobody grabs, the caller stays.
+/// If all three pass without anyone calling, the game re-deals.
 /// </summary>
 public class BidManager : MonoBehaviour
 {
-    // The index of the player currently bidding
+    /// <summary>
+    /// The two phases of the bidding process.
+    /// </summary>
+    public enum BidPhase
+    {
+        Calling,   // Players decide whether to call landlord
+        Grabbing   // After someone calls, others decide whether to grab
+    }
+
+    // The index of the player currently making a decision
     private int currentBidder;
 
-    // The current highest bid (0 = no one has bid yet)
-    private int highestBid;
+    // Current phase of the bidding process
+    private BidPhase currentPhase;
 
-    // The index of the player with the highest bid (-1 = no one)
-    private int highestBidder;
+    // The index of the player who called landlord (-1 = no one yet)
+    private int callerIndex;
 
-    // How many players have had a turn to bid
+    // The index of the player who will become landlord (updated as grabs happen)
+    private int landlordIndex;
+
+    // How many players have had a turn in the current phase
     private int turnsTaken;
+
+    // How many grab turns have been taken in phase 2
+    private int grabTurnsTaken;
+
+    // Current multiplier: 1 (base), 2 (one grab), 4 (two grabs)
+    private int grabMultiplier;
 
     // Whether bidding is currently active
     private bool isBidding;
 
     /// <summary>
-    /// The final bid score (1, 2, or 3). Used as base multiplier for scoring.
+    /// The final multiplier from the grab phase (1, 2, or 4).
+    /// Used as base multiplier for scoring.
     /// </summary>
-    public int FinalBidScore { get; private set; }
+    public int Multiplier => grabMultiplier;
+
+    /// <summary>
+    /// Returns the current bidding phase (Calling or Grabbing).
+    /// </summary>
+    public BidPhase CurrentPhase => currentPhase;
 
     /// <summary>
     /// Starts the bidding phase. Randomly picks who goes first.
@@ -33,101 +61,133 @@ public class BidManager : MonoBehaviour
     public void StartBidding()
     {
         currentBidder = Random.Range(0, 3);
-        highestBid = 0;
-        highestBidder = -1;
+        currentPhase = BidPhase.Calling;
+        callerIndex = -1;
+        landlordIndex = -1;
         turnsTaken = 0;
+        grabTurnsTaken = 0;
+        grabMultiplier = 1;
         isBidding = true;
-        FinalBidScore = 0;
 
-        Debug.Log($"Bidding started. {GameManager.Instance.Players[currentBidder].Name} bids first.");
+        Debug.Log($"Bidding started (grab landlord mode). {GameManager.Instance.Players[currentBidder].Name} decides first.");
     }
 
     /// <summary>
-    /// Called when the current bidder places a score bid (1, 2, or 3).
-    /// Must be higher than the current highest bid.
-    /// If someone bids 3, they become landlord immediately.
+    /// Called when the current player calls landlord (叫地主) during the Calling phase.
+    /// Transitions to Grabbing phase.
     /// </summary>
-    public void BidScore(int score)
+    public void CallLandlord()
     {
-        if (!isBidding)
+        if (!isBidding || currentPhase != BidPhase.Calling)
             return;
 
-        if (score <= highestBid || score < 1 || score > 3)
-        {
-            Debug.Log($"Invalid bid: {score}. Must be higher than {highestBid}.");
+        Debug.Log($"{GameManager.Instance.Players[currentBidder].Name} calls landlord!");
+
+        callerIndex = currentBidder;
+        landlordIndex = currentBidder;
+        turnsTaken = 0;
+        grabTurnsTaken = 0;
+        currentPhase = BidPhase.Grabbing;
+
+        // Move to next player for grabbing
+        AdvanceBidder();
+    }
+
+    /// <summary>
+    /// Called when the current player grabs landlord (抢地主) during the Grabbing phase.
+    /// Doubles the multiplier and updates who becomes landlord.
+    /// </summary>
+    public void GrabLandlord()
+    {
+        if (!isBidding || currentPhase != BidPhase.Grabbing)
             return;
-        }
 
-        Debug.Log($"{GameManager.Instance.Players[currentBidder].Name} bids {score} points!");
+        Debug.Log($"{GameManager.Instance.Players[currentBidder].Name} grabs landlord! Multiplier doubles.");
 
-        highestBid = score;
-        highestBidder = currentBidder;
-        turnsTaken++;
+        // Each grab doubles the multiplier
+        grabMultiplier *= 2;
+        landlordIndex = currentBidder;
+        grabTurnsTaken++;
 
-        // Bid 3 ends bidding immediately (maximum possible)
-        if (score == 3)
+        // Check if both other players have had their grab turn
+        if (grabTurnsTaken >= 2)
         {
             FinishBidding();
             return;
         }
 
-        // Move to next player
+        // Move to next player for their grab chance
         AdvanceBidder();
     }
 
     /// <summary>
-    /// Called when the current bidder decides to pass.
+    /// Called when the current player passes (不叫 in Calling phase, 不抢 in Grabbing phase).
     /// </summary>
     public void Pass()
     {
         if (!isBidding)
             return;
 
-        Debug.Log($"{GameManager.Instance.Players[currentBidder].Name} passes.");
-
-        turnsTaken++;
-
-        // All 3 players have had a turn
-        if (turnsTaken >= 3)
+        if (currentPhase == BidPhase.Calling)
         {
-            if (highestBidder == -1)
+            Debug.Log($"{GameManager.Instance.Players[currentBidder].Name} passes (不叫).");
+            turnsTaken++;
+
+            // All 3 players passed without anyone calling — re-deal
+            if (turnsTaken >= 3)
             {
-                // No one bid at all, need to re-deal
                 Debug.Log("All players passed. Re-dealing...");
                 isBidding = false;
                 GameManager.Instance.StartGame();
                 return;
             }
-            else
+
+            // Move to next player
+            AdvanceBidder();
+        }
+        else // Grabbing phase
+        {
+            Debug.Log($"{GameManager.Instance.Players[currentBidder].Name} passes (不抢).");
+            grabTurnsTaken++;
+
+            // Check if both other players have had their grab turn
+            if (grabTurnsTaken >= 2)
             {
-                // Someone bid, they become landlord
                 FinishBidding();
                 return;
             }
-        }
 
-        // Move to next player
-        AdvanceBidder();
+            // Move to next player for their grab chance
+            AdvanceBidder();
+        }
     }
 
     /// <summary>
     /// Advances to the next bidder in seat order.
+    /// In Grabbing phase, skips the caller (they already called).
     /// </summary>
     private void AdvanceBidder()
     {
         currentBidder = (currentBidder + 1) % 3;
-        Debug.Log($"Now {GameManager.Instance.Players[currentBidder].Name}'s turn to bid. Current highest: {highestBid}");
+
+        // In grabbing phase, skip the caller — they already committed
+        if (currentPhase == BidPhase.Grabbing && currentBidder == callerIndex)
+        {
+            currentBidder = (currentBidder + 1) % 3;
+        }
+
+        string phaseStr = currentPhase == BidPhase.Calling ? "call" : "grab";
+        Debug.Log($"Now {GameManager.Instance.Players[currentBidder].Name}'s turn to {phaseStr}.");
     }
 
     /// <summary>
-    /// Ends bidding and assigns the landlord role to the highest bidder.
+    /// Ends bidding and assigns the landlord role.
     /// </summary>
     private void FinishBidding()
     {
         isBidding = false;
-        FinalBidScore = highestBid;
-        Debug.Log($"Bidding complete! {GameManager.Instance.Players[highestBidder].Name} wins with {highestBid} points.");
-        GameManager.Instance.AssignLandlord(highestBidder);
+        Debug.Log($"Bidding complete! {GameManager.Instance.Players[landlordIndex].Name} is landlord. Multiplier: x{grabMultiplier}.");
+        GameManager.Instance.AssignLandlord(landlordIndex);
     }
 
     /// <summary>
@@ -136,14 +196,6 @@ public class BidManager : MonoBehaviour
     public int GetCurrentBidder()
     {
         return currentBidder;
-    }
-
-    /// <summary>
-    /// Returns the current highest bid score (0 if no one has bid yet).
-    /// </summary>
-    public int GetHighestBid()
-    {
-        return highestBid;
     }
 
     /// <summary>

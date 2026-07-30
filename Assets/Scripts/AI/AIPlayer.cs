@@ -22,7 +22,9 @@ public class AIPlayer : MonoBehaviour
 
     /// <summary>
     /// Called when it's an AI player's turn to bid.
-    /// Uses AIStrategy to evaluate hand strength and decide.
+    /// Uses AIStrategy to evaluate hand strength and decide whether to call/grab.
+    /// Calling phase: call if hand score >= 8.
+    /// Grabbing phase: grab if hand score >= 10 (higher bar since multiplier doubles).
     /// </summary>
     public void HandleBid(int playerIndex)
     {
@@ -33,28 +35,34 @@ public class AIPlayer : MonoBehaviour
             return;
 
         int handScore = AIStrategy.EvaluateHand(player.Hand);
-        int currentHighest = bidManager.GetHighestBid();
 
-        // Decide bid score based on hand strength
-        // Strong hand (12+) → bid 3, medium (9+) → bid 2, decent (7+) → bid 1
-        int desiredBid = 0;
-        if (handScore >= 12)
-            desiredBid = 3;
-        else if (handScore >= 9)
-            desiredBid = 2;
-        else if (handScore >= 7)
-            desiredBid = 1;
-
-        // Can only bid higher than current highest
-        if (desiredBid > currentHighest)
+        if (bidManager.CurrentPhase == BidManager.BidPhase.Calling)
         {
-            Debug.Log($"[AI] {player.Name} bids {desiredBid} (hand score: {handScore}).");
-            bidManager.BidScore(desiredBid);
+            // Calling phase: call landlord if hand is strong enough
+            if (handScore >= 8)
+            {
+                Debug.Log($"[AI] {player.Name} calls landlord (hand score: {handScore}).");
+                bidManager.CallLandlord();
+            }
+            else
+            {
+                Debug.Log($"[AI] {player.Name} passes on calling (hand score: {handScore}).");
+                bidManager.Pass();
+            }
         }
         else
         {
-            Debug.Log($"[AI] {player.Name} passes (hand score: {handScore}, needs > {currentHighest}).");
-            bidManager.Pass();
+            // Grabbing phase: grab if hand is very strong (higher threshold)
+            if (handScore >= 10)
+            {
+                Debug.Log($"[AI] {player.Name} grabs landlord! (hand score: {handScore}).");
+                bidManager.GrabLandlord();
+            }
+            else
+            {
+                Debug.Log($"[AI] {player.Name} passes on grabbing (hand score: {handScore}).");
+                bidManager.Pass();
+            }
         }
     }
 

@@ -3,7 +3,8 @@ using UnityEngine;
 /// <summary>
 /// Manages scoring in Dou Di Zhu.
 /// Tracks bomb/rocket count during play, detects spring (chun tian),
-/// and calculates final scores using: baseBid * 2^(bombs + rockets + spring).
+/// and calculates final scores using: baseMultiplier * 2^(bombs + rockets + spring).
+/// baseMultiplier comes from the grab landlord phase (1, 2, or 4).
 /// Accumulates total scores across multiple games.
 /// </summary>
 public class ScoreManager : MonoBehaviour
@@ -14,8 +15,8 @@ public class ScoreManager : MonoBehaviour
     // Number of rockets played this game
     private int rocketCount;
 
-    // Base bid score (1, 2, or 3) set by bidding phase
-    private int baseBid;
+    // Base multiplier from grab landlord phase (1, 2, or 4)
+    private int baseMultiplier;
 
     // Track how many times each player has played cards (for spring detection)
     private int[] playCountPerPlayer = new int[3];
@@ -34,16 +35,17 @@ public class ScoreManager : MonoBehaviour
 
     /// <summary>
     /// Resets per-game tracking for a new game. Call at the start of playing phase.
+    /// Accepts the multiplier from the grab landlord phase (1, 2, or 4).
     /// </summary>
-    public void ResetForNewGame(int bidScore)
+    public void ResetForNewGame(int multiplier)
     {
-        baseBid = bidScore;
+        baseMultiplier = multiplier;
         bombCount = 0;
         rocketCount = 0;
         playCountPerPlayer = new int[3];
         LastRoundScores = new int[3];
 
-        Debug.Log($"ScoreManager reset. Base bid: {baseBid}");
+        Debug.Log($"ScoreManager reset. Base multiplier: x{baseMultiplier}");
     }
 
     /// <summary>
@@ -123,15 +125,15 @@ public class ScoreManager : MonoBehaviour
 
     /// <summary>
     /// Calculates and applies scores for all players after a game ends.
-    /// Landlord wins: each farmer pays (baseBid * multiplier) to landlord.
-    /// Farmer wins: landlord pays (baseBid * multiplier) to each farmer.
+    /// Landlord wins: each farmer pays (baseMultiplier * multiplier) to landlord.
+    /// Farmer wins: landlord pays (baseMultiplier * multiplier) to each farmer.
     /// </summary>
     public void CalculateScores(int winnerIndex)
     {
         Player winner = GameManager.Instance.Players[winnerIndex];
         bool isSpring = DetectSpring(winnerIndex);
         int multiplier = CalculateMultiplier(isSpring);
-        int pointsPerFarmer = baseBid * multiplier;
+        int pointsPerFarmer = baseMultiplier * multiplier;
 
         // Find landlord index
         int landlordIndex = -1;
@@ -171,7 +173,7 @@ public class ScoreManager : MonoBehaviour
             TotalScores[i] += LastRoundScores[i];
         }
 
-        Debug.Log($"Score result: base={baseBid}, multiplier={multiplier} (bombs={bombCount}, rockets={rocketCount}, spring={isSpring})");
+        Debug.Log($"Score result: baseMultiplier=x{baseMultiplier}, playMultiplier={multiplier} (bombs={bombCount}, rockets={rocketCount}, spring={isSpring})");
         for (int i = 0; i < 3; i++)
         {
             Debug.Log($"  {GameManager.Instance.Players[i].Name}: {FormatScoreChange(LastRoundScores[i])} (total: {TotalScores[i]})");
